@@ -1,10 +1,39 @@
 
+import { useState } from "react";
 import bgImage from "../assets/forgotpassword.png";
 import { useNavigate } from "react-router-dom";
+import { adminForgotPasswordReset } from "../services/api";
 
 
 function ForgotPassword() {
     const navigate = useNavigate();
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
+
+    const handleReset = async (e) => {
+      e.preventDefault();
+      setError("");
+      if (newPassword !== confirmPassword) {
+        setError("Passwords do not match");
+        return;
+      }
+      if (newPassword.length < 8) {
+        setError("Password must be at least 8 characters");
+        return;
+      }
+      setLoading(true);
+      try {
+        await adminForgotPasswordReset(newPassword);
+        navigate("/login");
+      } catch (err) {
+        setError(err.response?.data?.error || "Reset failed");
+      } finally {
+        setLoading(false);
+      }
+    };
+
   return (
     <>
       <style>{styles}</style>
@@ -16,16 +45,22 @@ function ForgotPassword() {
         <div className="login-box">
           <h1>Reset Password</h1>
 
+          {error && <p style={{ color: "#E50914", fontSize: 14, marginBottom: 12, textAlign: "center" }}>{error}</p>}
+
           <label>New Password</label>
           <input
             type="password"
             placeholder="Enter your password"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
           />
 
           <label>Confirm password</label>
           <input
             type="password"
             placeholder="Enter your password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
           />
 
          <div className="button-group">
@@ -38,9 +73,10 @@ function ForgotPassword() {
 
   <button
     className="signin-btn"
-    onClick={() => navigate("/dashboard")}
+    onClick={handleReset}
+    disabled={loading}
   >
-    Sign in
+    {loading ? "Resetting..." : "Sign in"}
   </button>
 </div>
         </div>

@@ -36,6 +36,9 @@ export const adminForgotPassword = (email) =>
 export const adminResetPassword = (email, currentPassword, newPassword) =>
   api.post("/admin/reset-password", { email, currentPassword, newPassword });
 
+export const adminForgotPasswordReset = (newPassword) =>
+  api.post("/admin/forgot-password-reset", { newPassword });
+
 export const getDashboardStats = () => api.get("/admin/dashboard");
 
 export const getDrills = (params) => api.get("/admin/drills", { params });
