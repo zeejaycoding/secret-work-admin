@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Box, Typography, IconButton, Divider } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Box, Typography, IconButton, Divider, useMediaQuery, useTheme } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import PodcastsIcon from "@mui/icons-material/Podcasts";
 import {
@@ -20,9 +20,15 @@ import {
 import logo from "../assets/logo.png";
 
 export default function Sidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const [collapsed, setCollapsed] = useState(isMobile);
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    if (isMobile) setCollapsed(true);
+  }, [isMobile]);
 
   const activeSx = {
     bgcolor: "#242424",
@@ -92,7 +98,7 @@ const systemItems = [
   return (
   <Box
   sx={{
-    width: collapsed ? 104 : 280,
+    width: collapsed ? { xs: 72, md: 104 } : 280,
     flexShrink: 0,
     minHeight: "100vh",
     alignSelf: "stretch",

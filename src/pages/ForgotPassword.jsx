@@ -26,7 +26,7 @@ function ForgotPassword() {
       setLoading(true);
       try {
         await adminForgotPasswordReset(newPassword);
-        navigate("/login");
+        navigate("/");
       } catch (err) {
         setError(err.response?.data?.error || "Reset failed");
       } finally {
@@ -66,7 +66,7 @@ function ForgotPassword() {
          <div className="button-group">
   <button
     className="back-btn"
-    onClick={() => navigate("/login")}
+    onClick={() => navigate("/")}
   >
     Back
   </button>
