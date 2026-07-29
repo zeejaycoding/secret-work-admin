@@ -96,9 +96,21 @@ const systemItems = [
 ];
 
   return (
+  <>
+  {!collapsed && isMobile && (
+    <Box
+      onClick={() => setCollapsed(true)}
+      sx={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 1200,
+        bgcolor: "rgba(0,0,0,0.5)",
+      }}
+    />
+  )}
   <Box
   sx={{
-    width: collapsed ? { xs: 72, md: 104 } : 280,
+    width: collapsed ? { xs: 56, md: 104 } : { xs: 280, md: 280 },
     flexShrink: 0,
     minHeight: "100vh",
     alignSelf: "stretch",
@@ -107,6 +119,10 @@ const systemItems = [
     bgcolor: "#000",
     borderRight: "1px solid #1F1F1F",
     transition: "width .3s ease",
+    position: { xs: collapsed ? "relative" : "fixed", md: "relative" },
+    zIndex: { xs: collapsed ? 1 : 1300, md: 1 },
+    left: 0,
+    top: 0,
   }}
 >
   
@@ -453,5 +469,6 @@ const systemItems = [
 })}
 </Box>
     </Box>
+  </>
   );
 }
