@@ -102,6 +102,8 @@ export default function ContentLibrary() {
     justifyContent: "space-between",
     alignItems: "flex-start",
     mb: 4,
+    flexDirection: { xs: "column", sm: "row" },
+    gap: { xs: 2, sm: 0 },
   }}
 >
   <Box>
@@ -164,11 +166,12 @@ export default function ContentLibrary() {
     py: 2,
   }}
 >
- <Box
+  <Box
   sx={{
     display: "flex",
     alignItems: "center",
     gap: 2,
+    flexWrap: { xs: "wrap", md: "nowrap" },
   }}
 >
     {/* Search */}
@@ -367,8 +370,8 @@ export default function ContentLibrary() {
   sx={{
     mt: 3,
     display: "grid",
-    gridTemplateColumns: "repeat(4, minmax(0,1fr))", // max 4 columns
-    gap: 3,
+    gridTemplateColumns: { xs: "repeat(2, minmax(0,1fr))", sm: "repeat(3, minmax(0,1fr))", md: "repeat(4, minmax(0,1fr))" },
+    gap: { xs: 2, md: 3 },
   }}
 >
   {drills.map((drill) => (
@@ -396,11 +399,11 @@ export default function ContentLibrary() {
         <Box
           component="img"
           src={drill.image}
-          sx={{
-            width: "100%",
-            height: 180,
-            objectFit: "cover",
-          }}
+            sx={{
+              width: "100%",
+              height: { xs: 120, sm: 150, md: 180 },
+              objectFit: "cover",
+            }}
         />
       ) : (
         <Box

@@ -8,7 +8,7 @@ export default function DashboardLayout() {
   sx={{
     display: "flex",
     width: "100%",
-    alignItems: "stretch", // important
+    alignItems: "stretch",
   }}
 >
   <Sidebar />
@@ -19,7 +19,7 @@ export default function DashboardLayout() {
       flex: 1,
       minWidth: 0,
       bgcolor: "#121212",
-      p: 4,
+      p: { xs: 2, sm: 3, md: 4 },
     }}
   >
     <Outlet />

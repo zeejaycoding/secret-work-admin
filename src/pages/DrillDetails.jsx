@@ -52,14 +52,14 @@ export default function DrillDetails() {
     <Box>
       {/* Back */}
       <Box
-        onClick={() => navigate("/content-library")}
+        onClick={() => navigate("/content")}
         sx={{
           display: "flex",
           alignItems: "center",
           gap: 1,
           cursor: "pointer",
           width: "fit-content",
-          mb: 4,
+          mb: { xs: 2, md: 4 },
         }}
       >
         <ArrowLeft size={18} color="#FFFFFF" />
@@ -94,7 +94,7 @@ export default function DrillDetails() {
         sx={{
           fontFamily: "Poppins",
           fontWeight: 500,
-          fontSize: "24px",
+          fontSize: { xs: "18px", sm: "20px", md: "24px" },
           color: "#FFFFFF",
           mb: 1,
         }}
@@ -121,6 +121,8 @@ export default function DrillDetails() {
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          flexDirection: { xs: "column", sm: "row" },
+          gap: { xs: 2, sm: 0 },
         }}
       >
         <Box
@@ -229,10 +231,10 @@ export default function DrillDetails() {
       </Box>
       <Box
   sx={{
-    mt: 4,
+    mt: { xs: 3, md: 4 },
     display: "grid",
-    gridTemplateColumns: "7fr 3fr",
-    gap: 3,
+    gridTemplateColumns: { xs: "1fr", md: "7fr 3fr" },
+    gap: { xs: 2, md: 3 },
   }}
 >
   {/* LEFT */}
@@ -245,15 +247,15 @@ export default function DrillDetails() {
       overflow: "hidden",
     }}
   >
-    <Box
-      component="img"
-      src={Crossover}
-      sx={{
-        width: "100%",
-        height: 340,
-        objectFit: "cover",
-      }}
-    />
+      <Box
+        component="img"
+        src={Crossover}
+        sx={{
+          width: "100%",
+          height: { xs: 200, sm: 280, md: 340 },
+          objectFit: "cover",
+        }}
+      />
 
     <Box sx={{ p: 3 }}>
       <Typography
@@ -286,8 +288,8 @@ export default function DrillDetails() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: "repeat(4,1fr)",
-          gap: 2,
+          gridTemplateColumns: { xs: "repeat(2,1fr)", md: "repeat(4,1fr)" },
+          gap: { xs: 1.5, md: 2 },
         }}
       >
         {[
@@ -512,7 +514,7 @@ export default function DrillDetails() {
     14 Days Views
   </Typography>
 
-  <Box sx={{ width: "100%", height: 340 }}>
+  <Box sx={{ width: "100%", height: { xs: 220, sm: 280, md: 340 } }}>
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={viewsData}>
         <defs>

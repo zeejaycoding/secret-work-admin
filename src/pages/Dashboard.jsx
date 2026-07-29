@@ -138,7 +138,7 @@ const drillCompletion = (data?.recentUsers || []).length > 0
         sx={{
           fontFamily: "Poppins",
           fontWeight: 500,
-          fontSize: "24px",
+          fontSize: { xs: "18px", sm: "20px", md: "24px" },
           color: "#FFFFFF",
           mb: 1,
         }}
@@ -150,9 +150,9 @@ const drillCompletion = (data?.recentUsers || []).length > 0
         sx={{
           fontFamily: "Poppins",
           fontWeight: 500,
-          fontSize: "13px",
+          fontSize: { xs: "12px", md: "13px" },
           color: "#6B6B6B",
-          mb: 4,
+          mb: { xs: 3, md: 4 },
         }}
       >
         Here's what's happening on your platform today.
@@ -162,8 +162,8 @@ const drillCompletion = (data?.recentUsers || []).length > 0
       <Box
   sx={{
     display: "grid",
-    gridTemplateColumns: "repeat(5, 1fr)",
-    gap: 2,
+    gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
+    gap: { xs: 1.5, md: 2 },
   }}
 >
   {stats.map((item) => {
@@ -278,7 +278,7 @@ const drillCompletion = (data?.recentUsers || []).length > 0
     User Growth & Revenue
   </Typography>
 
-  <Box sx={{ width: "100%", height: 350 }}>
+  <Box sx={{ width: "100%", height: { xs: 220, sm: 280, md: 350 } }}>
     <ResponsiveContainer width="100%" height="100%">
       <AreaChart data={chartData}>
         <defs>
@@ -345,8 +345,8 @@ const drillCompletion = (data?.recentUsers || []).length > 0
   sx={{
     mt: 4,
     display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 3,
+    gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" },
+    gap: { xs: 2, md: 3 },
   }}
 >
   {/* Recent Activity */}
