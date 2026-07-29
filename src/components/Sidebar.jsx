@@ -30,11 +30,13 @@ export default function Sidebar() {
     if (isMobile) setCollapsed(true);
   }, [isMobile]);
 
-  const activeSx = {
-    bgcolor: "#242424",
-    border: "1px solid #2A2A2A",
-    boxShadow: "0px 4px 20px #00000040, inset 0px 1px 1px #8A848440",
-  };
+  const activeSx = collapsed
+    ? { bgcolor: "#242424" }
+    : {
+        bgcolor: "#242424",
+        border: "1px solid #2A2A2A",
+        boxShadow: "0px 4px 20px #00000040, inset 0px 1px 1px #8A848440",
+      };
 
   const menuItems = [
   {
