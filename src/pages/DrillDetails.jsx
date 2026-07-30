@@ -419,7 +419,7 @@ export default function DrillDetails() {
           size={20}
           color="#929292"
           style={{ cursor: "pointer" }}
-          onClick={() => navigate("/coaches/1")}
+          onClick={() => navigate("/coach/1")}
         />
       </Box>
     </Box>

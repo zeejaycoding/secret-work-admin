@@ -6,6 +6,7 @@ import Dashboard from "./pages/Dashboard";
 import ContentLibrary from "./pages/ContentLibrary";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DrillDetails from "./pages/DrillDetails";
+import CoachDetails from "./pages/CoachDetails";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("admin-token");
@@ -30,6 +31,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/content" element={<ContentLibrary />} />
           <Route path="/drill/:id" element={<DrillDetails />} />
+          <Route path="/coach/:id" element={<CoachDetails />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />
