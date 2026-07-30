@@ -52,6 +52,7 @@ export default function Sidebar() {
   {
     title: "Programs & Categories",
     icon: Layers3,
+    path: "/programs",
   },
   {
     title: "Learn from the Pros",

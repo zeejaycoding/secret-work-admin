@@ -4,6 +4,8 @@ import Login from "./pages/Login";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import ContentLibrary from "./pages/ContentLibrary";
+import ProgramsCategories from "./pages/ProgramsCategories";
+import ProgramDetails from "./pages/ProgramDetails";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DrillDetails from "./pages/DrillDetails";
 import CoachDetails from "./pages/CoachDetails";
@@ -30,6 +32,8 @@ function App() {
         >
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/content" element={<ContentLibrary />} />
+          <Route path="/programs" element={<ProgramsCategories />} />
+          <Route path="/program/:id" element={<ProgramDetails />} />
           <Route path="/drill/:id" element={<DrillDetails />} />
           <Route path="/coach/:id" element={<CoachDetails />} />
         </Route>
