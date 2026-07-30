@@ -188,7 +188,7 @@ export default function ProgramsCategories() {
         {/* Left - Categories */}
         <Box
           sx={{
-            width: { md: "30%" },
+            width: { xs: "100%", md: "30%" },
             alignSelf: "flex-start",
             bgcolor: "#161616",
             border: "1px solid #1F1F1F",
