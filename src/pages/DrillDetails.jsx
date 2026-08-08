@@ -1,12 +1,16 @@
+import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Box, Typography, Button, LinearProgress} from "@mui/material";
+import { Box, Typography, Button, LinearProgress, CircularProgress, Dialog, DialogContent, IconButton, TextField } from "@mui/material";
 import {
   ArrowLeft,
   Edit,
   Trash2,
-  ChevronRight
+  ChevronRight,
+  X,
+  ImagePlus,
+  Video,
 } from "lucide-react";
-import Crossover from "../assets/crossover.jpg";
+import { getDrill, updateDrill, updateDrillFiles, deleteDrill } from "../services/api";
 
 import {
   ResponsiveContainer,
@@ -17,36 +21,162 @@ import {
   CartesianGrid,
 } from "recharts";
 
+function formatViews(n) {
+  if (!n) return "0 views";
+  if (n >= 1000) return (n / 1000).toFixed(1) + "k views";
+  return n + " views";
+}
+
+const STATUS_META = {
+  published: { label: "Published", color: "#22C55E", bg: "#132018" },
+  draft: { label: "Draft", color: "#F59E0B", bg: "#1F1A10" },
+  archived: { label: "Archived", color: "#929292", bg: "#1F1F1F" },
+};
+
 export default function DrillDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  // Demo data for now
-  const drill = {
-    title: "Killer Crossover Combo",
-    coach: "Coach Marcus",
-    category: "Dribbling",
-    duration: "12 min",
-    status: "Published",
-    views: "45.9k views",
+  const [drill, setDrill] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editError, setEditError] = useState("");
+  const [editForm, setEditForm] = useState({
+    title: "",
+    description: "",
+    completionRate: "",
+    avgWatchTime: "",
+    likes: "",
+  });
+  const [editThumb, setEditThumb] = useState(null);
+  const [editVideo, setEditVideo] = useState(null);
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setNotFound(false);
+    getDrill(id)
+      .then((res) => setDrill(res.data.drill))
+      .catch(() => setNotFound(true))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const openEdit = () => {
+    setEditForm({
+      title: drill?.title || "",
+      description: drill?.description || "",
+      completionRate: drill?.completionRate ?? "",
+      avgWatchTime: drill?.avgWatchTime || "",
+      likes: drill?.likes ?? "",
+    });
+    setEditThumb(null);
+    setEditVideo(null);
+    setEditError("");
+    setEditOpen(true);
   };
 
-  const viewsData = [
-  { day: "D1", views: 220 },
-  { day: "D2", views: 310 },
-  { day: "D3", views: 280 },
-  { day: "D4", views: 430 },
-  { day: "D5", views: 520 },
-  { day: "D6", views: 610 },
-  { day: "D7", views: 560 },
-  { day: "D8", views: 720 },
-  { day: "D9", views: 690 },
-  { day: "D10", views: 810 },
-  { day: "D11", views: 930 },
-  { day: "D12", views: 1010 },
-  { day: "D13", views: 980 },
-  { day: "D14", views: 1180 },
-];
+  const handleSaveEdit = () => {
+    if (saving || !id) return;
+    if (!editForm.title.trim()) {
+      setEditError("Drill title is required.");
+      return;
+    }
+    setSaving(true);
+    setEditError("");
+
+    const hasFiles = editThumb || editVideo;
+    const base = {
+      title: editForm.title.trim(),
+      description: editForm.description.trim(),
+      completionRate: Number(editForm.completionRate) || 0,
+      avgWatchTime: editForm.avgWatchTime.trim(),
+      likes: Number(editForm.likes) || 0,
+    };
+
+    const finish = (res) => {
+      setDrill(res.data.drill);
+      setEditOpen(false);
+      setSaving(false);
+    };
+    const fail = (err) => {
+      setEditError(err.response?.data?.error || "Failed to save changes. Please try again.");
+      setSaving(false);
+    };
+
+    if (hasFiles) {
+      const form = new FormData();
+      Object.keys(base).forEach((k) => form.append(k, base[k]));
+      if (editThumb) form.append("thumbnail", editThumb);
+      if (editVideo) form.append("video", editVideo);
+      updateDrillFiles(id, form).then(finish).catch(fail);
+    } else {
+      updateDrill(id, base).then(finish).catch(fail);
+    }
+  };
+
+  const handleDelete = () => {
+    if (deleting || !id) return;
+    setDeleting(true);
+    deleteDrill(id)
+      .then(() => navigate("/content"))
+      .catch(() => setDeleting(false))
+      .finally(() => setConfirmOpen(false));
+  };
+
+  if (loading) {
+    return (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+        <CircularProgress sx={{ color: "#E50914" }} />
+      </Box>
+    );
+  }
+
+  if (notFound || !drill) {
+    return (
+      <Box>
+        <Box
+          onClick={() => navigate("/content")}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1,
+            cursor: "pointer",
+            width: "fit-content",
+            mb: 4,
+          }}
+        >
+          <ArrowLeft size={18} color="#FFFFFF" />
+          <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "13px", color: "#FFFFFF" }}>
+            Back
+          </Typography>
+        </Box>
+        <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "18px", color: "#FFFFFF" }}>
+          Drill not found
+        </Typography>
+      </Box>
+    );
+  }
+
+  const statusMeta = STATUS_META[drill.status] || STATUS_META.draft;
+  const publishedDate = drill.createdAt
+    ? new Date(drill.createdAt).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+    : "—";
+
+  const stats = [
+    [drill.completionRate ? `${drill.completionRate}%` : "—", "Completion"],
+    [drill.avgWatchTime || "—", "Avg Watch"],
+    [(drill.likes || 0).toLocaleString(), "Likes"],
+    [publishedDate, "Date Published"],
+  ];
+
+  const chartData =
+    drill.viewsHistory && drill.viewsHistory.length
+      ? drill.viewsHistory.map((v, i) => ({ day: `D${i + 1}`, views: v.count || 0 }))
+      : Array.from({ length: 14 }, (_, i) => ({ day: `D${i + 1}`, views: 0 }));
 
   return (
     <Box>
@@ -132,10 +262,10 @@ export default function DrillDetails() {
             gap: 1.5,
           }}
         >
-          {/* Published */}
+          {/* Status */}
           <Box
             sx={{
-              bgcolor: "#132018",
+              bgcolor: statusMeta.bg,
               px: 2,
               py: 0.8,
               borderRadius: "8px",
@@ -146,10 +276,10 @@ export default function DrillDetails() {
                 fontFamily: "Poppins",
                 fontWeight: 500,
                 fontSize: "13px",
-                color: "#22C55E",
+                color: statusMeta.color,
               }}
             >
-              Published
+              {statusMeta.label}
             </Typography>
           </Box>
 
@@ -170,7 +300,7 @@ export default function DrillDetails() {
                 color: "#FFFFFF",
               }}
             >
-              {drill.views}
+              {formatViews(drill.views)}
             </Typography>
           </Box>
         </Box>
@@ -184,6 +314,7 @@ export default function DrillDetails() {
         >
           <Button
             startIcon={<Edit size={16} color="#FFFFFF" />}
+            onClick={openEdit}
             sx={{
               bgcolor: "#1F1F1F",
               border: "1px solid #2A2A2A",
@@ -207,6 +338,7 @@ export default function DrillDetails() {
 
           <Button
             startIcon={<Trash2 size={16} color="#FFFFFF" />}
+            onClick={() => setConfirmOpen(true)}
             sx={{
               bgcolor: "#1F1F1F",
               border: "1px solid #2A2A2A",
@@ -247,15 +379,38 @@ export default function DrillDetails() {
       overflow: "hidden",
     }}
   >
-      <Box
-        component="img"
-        src={Crossover}
-        sx={{
-          width: "100%",
-          height: { xs: 200, sm: 280, md: 340 },
-          objectFit: "cover",
-        }}
-      />
+      {drill.videoUrl ? (
+        <Box
+          component="video"
+          src={drill.videoUrl}
+          controls
+          poster={drill.imageUrl || undefined}
+          sx={{
+            width: "100%",
+            maxHeight: { xs: 240, sm: 340, md: 420 },
+            bgcolor: "#000",
+            display: "block",
+          }}
+        />
+      ) : drill.imageUrl ? (
+        <Box
+          component="img"
+          src={drill.imageUrl}
+          sx={{
+            width: "100%",
+            height: { xs: 200, sm: 280, md: 340 },
+            objectFit: "cover",
+          }}
+        />
+      ) : (
+        <Box
+          sx={{
+            width: "100%",
+            height: { xs: 200, sm: 280, md: 340 },
+            bgcolor: "#2A2A2A",
+          }}
+        />
+      )}
 
     <Box sx={{ p: 3 }}>
       <Typography
@@ -280,9 +435,7 @@ export default function DrillDetails() {
           mb: 3,
         }}
       >
-        Master the killer crossover combo to create separation from defenders,
-        improve ball handling under pressure and develop quick change-of-direction
-        skills for game situations.
+        {drill.description || "No description provided."}
       </Typography>
 
       <Box
@@ -292,12 +445,7 @@ export default function DrillDetails() {
           gap: { xs: 1.5, md: 2 },
         }}
       >
-        {[
-          ["98%", "Completion"],
-          ["6m 12s", "Avg Watch"],
-          ["3,240", "Likes"],
-          ["Sep 9, 2026", "Date Published"],
-        ].map(([value, label]) => (
+        {stats.map(([value, label]) => (
           <Box
             key={label}
             sx={{
@@ -385,7 +533,7 @@ export default function DrillDetails() {
                 color: "#FFFFFF",
               }}
             >
-              CM
+              {(drill.coach || "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase() || "CO"}
             </Typography>
           </Box>
 
@@ -399,7 +547,7 @@ export default function DrillDetails() {
                 mb: .5,
               }}
             >
-              Coach Marcus
+              {drill.coach}
             </Typography>
 
             <Typography
@@ -410,7 +558,7 @@ export default function DrillDetails() {
                 color: "#929292",
               }}
             >
-              54 Drills • 12.8k Followers
+              {drill.category}
             </Typography>
           </Box>
         </Box>
@@ -419,7 +567,6 @@ export default function DrillDetails() {
           size={20}
           color="#929292"
           style={{ cursor: "pointer" }}
-          onClick={() => navigate("/coach/1")}
         />
       </Box>
     </Box>
@@ -461,7 +608,7 @@ export default function DrillDetails() {
             color: "#FFFFFF",
           }}
         >
-          87% Complete
+          {drill.completionRate ? `${drill.completionRate}% Complete` : "No data"}
         </Typography>
 
         <Typography
@@ -478,7 +625,7 @@ export default function DrillDetails() {
 
       <LinearProgress
         variant="determinate"
-        value={87}
+        value={Math.min(Math.max(drill.completionRate || 0, 0), 100)}
         sx={{
           height: 10,
           borderRadius: 10,
@@ -516,7 +663,9 @@ export default function DrillDetails() {
 
   <Box sx={{ width: "100%", height: { xs: 220, sm: 280, md: 340 } }}>
     <ResponsiveContainer width="100%" height="100%">
-      <AreaChart data={viewsData}>
+      <AreaChart
+        data={chartData}
+      >
         <defs>
           <linearGradient
             id="viewsGradient"
@@ -577,6 +726,353 @@ export default function DrillDetails() {
   </Box>
 </Box>
 </Box>
+
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "16px",
+            boxShadow: "0px 4px 20px #00000066",
+            m: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 600, fontSize: "18px", color: "#FFFFFF" }}>
+              Delete Drill
+            </Typography>
+            <IconButton onClick={() => setConfirmOpen(false)} sx={{ color: "#FFFFFF", p: 0 }}>
+              <X size={20} />
+            </IconButton>
+          </Box>
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#A0A0A0", mb: 3 }}>
+            Are you sure you want to delete "{drill.title}"? This cannot be undone.
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+            <Button
+              onClick={() => setConfirmOpen(false)}
+              sx={{
+                bgcolor: "#1F1F1F",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                "&:hover": { bgcolor: "#1F1F1F" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDelete}
+              disabled={deleting}
+              sx={{
+                bgcolor: "#E50914",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                boxShadow: "0px 4px 20px #F81B1B40",
+                "&:hover": { bgcolor: "#E50914" },
+                "&.Mui-disabled": { bgcolor: "#E50914", color: "#FFFFFF", opacity: 0.6 },
+              }}
+            >
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "16px",
+            boxShadow: "0px 4px 20px #00000066",
+            m: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 3 }}>
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 600, fontSize: "18px", color: "#FFFFFF" }}>
+              Edit Drill
+            </Typography>
+            <IconButton onClick={() => setEditOpen(false)} sx={{ color: "#FFFFFF", p: 0 }}>
+              <X size={20} />
+            </IconButton>
+          </Box>
+
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+            Drill Title
+          </Typography>
+          <TextField
+            placeholder="E.g Killer Crossover"
+            variant="outlined"
+            fullWidth
+            value={editForm.title}
+            onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+            sx={{
+              mb: 2.5,
+              "& .MuiOutlinedInput-root": {
+                bgcolor: "#121212",
+                borderRadius: "10px",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 500,
+                fontSize: "14px",
+                "& fieldset": { borderColor: "#1A1A1A" },
+                "&:hover fieldset": { borderColor: "#1A1A1A" },
+                "&.Mui-focused fieldset": { borderColor: "#1A1A1A" },
+              },
+            }}
+          />
+
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+            Drill Description
+          </Typography>
+          <TextField
+            placeholder="Describe the drill..."
+            variant="outlined"
+            fullWidth
+            multiline
+            minRows={3}
+            value={editForm.description}
+            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+            sx={{
+              mb: 2.5,
+              "& .MuiOutlinedInput-root": {
+                bgcolor: "#121212",
+                borderRadius: "10px",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 500,
+                fontSize: "14px",
+                "& fieldset": { borderColor: "#1A1A1A" },
+                "&:hover fieldset": { borderColor: "#1A1A1A" },
+                "&.Mui-focused fieldset": { borderColor: "#1A1A1A" },
+              },
+            }}
+          />
+
+          <Box sx={{ display: "flex", gap: 2, mb: 2.5, flexDirection: { xs: "column", sm: "row" } }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+                Completion Rate (%)
+              </Typography>
+              <TextField
+                type="number"
+                variant="outlined"
+                fullWidth
+                value={editForm.completionRate}
+                onChange={(e) => setEditForm({ ...editForm, completionRate: e.target.value })}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: "#121212",
+                    borderRadius: "10px",
+                    color: "#FFFFFF",
+                    fontFamily: "Inter",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    "& fieldset": { borderColor: "#1A1A1A" },
+                    "&:hover fieldset": { borderColor: "#1A1A1A" },
+                    "&.Mui-focused fieldset": { borderColor: "#1A1A1A" },
+                  },
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+                Avg Watch Time
+              </Typography>
+              <TextField
+                placeholder="E.g 6m 12s"
+                variant="outlined"
+                fullWidth
+                value={editForm.avgWatchTime}
+                onChange={(e) => setEditForm({ ...editForm, avgWatchTime: e.target.value })}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: "#121212",
+                    borderRadius: "10px",
+                    color: "#FFFFFF",
+                    fontFamily: "Inter",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    "& fieldset": { borderColor: "#1A1A1A" },
+                    "&:hover fieldset": { borderColor: "#1A1A1A" },
+                    "&.Mui-focused fieldset": { borderColor: "#1A1A1A" },
+                  },
+                }}
+              />
+            </Box>
+            <Box sx={{ flex: 1 }}>
+              <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+                Likes
+              </Typography>
+              <TextField
+                type="number"
+                variant="outlined"
+                fullWidth
+                value={editForm.likes}
+                onChange={(e) => setEditForm({ ...editForm, likes: e.target.value })}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    bgcolor: "#121212",
+                    borderRadius: "10px",
+                    color: "#FFFFFF",
+                    fontFamily: "Inter",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    "& fieldset": { borderColor: "#1A1A1A" },
+                    "&:hover fieldset": { borderColor: "#1A1A1A" },
+                    "&.Mui-focused fieldset": { borderColor: "#1A1A1A" },
+                  },
+                }}
+              />
+            </Box>
+          </Box>
+
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+            Thumbnail {drill.imageUrl ? "(current uploaded image — pick a new one to replace it)" : ""}
+          </Typography>
+          <Box
+            onClick={() => document.getElementById("edit-thumb-input").click()}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1.5,
+              border: "1px dashed #2A2A2A",
+              borderRadius: "10px",
+              bgcolor: "#121212",
+              py: 2,
+              mb: 2.5,
+              cursor: "pointer",
+              "&:hover": { borderColor: "#3A3A3A", bgcolor: "#161616" },
+            }}
+          >
+            <ImagePlus size={18} color="#929292" />
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "13px", color: "#A0A0A0" }}>
+              {editThumb ? editThumb.name : "Click to upload new thumbnail"}
+            </Typography>
+            <input
+              id="edit-thumb-input"
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={(e) => setEditThumb(e.target.files?.[0] || null)}
+            />
+          </Box>
+
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+            Drill Video {drill.videoUrl ? "(current uploaded video — pick a new one to replace it)" : ""}
+          </Typography>
+          <Box
+            onClick={() => document.getElementById("edit-video-input").click()}
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 1.5,
+              border: "1px dashed #2A2A2A",
+              borderRadius: "10px",
+              bgcolor: "#121212",
+              py: 2,
+              mb: 2.5,
+              cursor: "pointer",
+              "&:hover": { borderColor: "#3A3A3A", bgcolor: "#161616" },
+            }}
+          >
+            <Video size={18} color="#929292" />
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "13px", color: "#A0A0A0" }}>
+              {editVideo ? editVideo.name : "Click to upload new drill video"}
+            </Typography>
+            <input
+              id="edit-video-input"
+              type="file"
+              accept="video/*"
+              hidden
+              onChange={(e) => setEditVideo(e.target.files?.[0] || null)}
+            />
+          </Box>
+
+          {editError && (
+            <Box
+              sx={{
+                bgcolor: "#2A0F12",
+                border: "1px solid #E50914",
+                borderRadius: "10px",
+                px: 2,
+                py: 1.5,
+                mb: 2.5,
+              }}
+            >
+              <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "13px", color: "#FF6B6B" }}>
+                {editError}
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+            <Button
+              onClick={() => setEditOpen(false)}
+              sx={{
+                bgcolor: "#1F1F1F",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                "&:hover": { bgcolor: "#1F1F1F" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSaveEdit}
+              disabled={saving}
+              sx={{
+                bgcolor: "#E50914",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                boxShadow: "0px 4px 20px #F81B1B40",
+                "&:hover": { bgcolor: "#E50914" },
+                "&.Mui-disabled": { bgcolor: "#E50914", color: "#FFFFFF", opacity: 0.6 },
+              }}
+            >
+              {saving ? "Saving..." : "Save"}
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 }

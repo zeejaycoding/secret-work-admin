@@ -45,12 +45,94 @@ export const getDrills = (params) => api.get("/admin/drills", { params });
 
 export const getDrill = (id) => api.get(`/admin/drills/${id}`);
 
-export const createDrill = (data) => api.post("/admin/drills", data);
+export const createDrill = (data) =>
+  api.post("/admin/drills", data, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 180000,
+  });
 
-export const updateDrill = (id, data) => api.put(`/admin/drills/${id}`, data);
+export const updateDrill = (id, data) =>
+  api.put(`/admin/drills/${id}`, data, {
+    timeout: 180000,
+  });
+
+export const updateDrillFiles = (id, formData) =>
+  api.put(`/admin/drills/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 180000,
+  });
 
 export const deleteDrill = (id) => api.delete(`/admin/drills/${id}`);
 
 export const getUsers = (params) => api.get("/admin/users", { params });
+
+export const getUser = (id) => api.get(`/admin/users/${id}`);
+
+export const updateUser = (id, data) => api.put(`/admin/users/${id}`, data);
+
+export const resetUserPassword = (id) =>
+  api.post(`/admin/users/${id}/reset-password`);
+
+export const getCategories = () => api.get("/admin/categories");
+
+export const createCategory = (data) => api.post("/admin/categories", data);
+
+export const deleteCategory = (id) => api.delete(`/admin/categories/${id}`);
+
+export const getPrograms = (params) => api.get("/admin/programs", { params });
+
+export const getProgram = (id) => api.get(`/admin/programs/${id}`);
+
+export const createProgram = (data) => api.post("/admin/programs", data);
+
+export const updateProgram = (id, data) => api.put(`/admin/programs/${id}`, data);
+
+export const removeDrillFromProgram = (id, drillId) =>
+  api.delete(`/admin/programs/${id}/drills/${drillId}`);
+
+export const deleteProgram = (id) => api.delete(`/admin/programs/${id}`);
+
+export const getPros = (params) => api.get("/admin/pros", { params });
+
+export const getPro = (id) => api.get(`/admin/pros/${id}`);
+
+export const createPro = (data) =>
+  api.post("/admin/pros", data, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 180000,
+  });
+
+export const updatePro = (id, data) => api.put(`/admin/pros/${id}`, data);
+
+export const updateProFiles = (id, formData) =>
+  api.put(`/admin/pros/${id}`, formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 180000,
+  });
+
+export const deletePro = (id) => api.delete(`/admin/pros/${id}`);
+
+export const getPodcasts = () => api.get("/admin/podcasts");
+
+export const getPodcast = (id) => api.get(`/admin/podcasts/${id}`);
+
+export const createPodcast = (data) =>
+  api.post("/admin/podcasts", data, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 180000,
+  });
+
+export const updatePodcast = (id, data) =>
+  api.put(`/admin/podcasts/${id}`, data, {
+    headers: { "Content-Type": "multipart/form-data" },
+    timeout: 180000,
+  });
+
+export const deletePodcast = (id) => api.delete(`/admin/podcasts/${id}`);
+
+export const transcribePodcast = (id) =>
+  api.post(`/admin/podcasts/${id}/transcribe`, null, {
+    timeout: 180000,
+  });
 
 export default api;

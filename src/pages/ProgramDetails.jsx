@@ -1,17 +1,275 @@
-import { Box, Typography, Button, LinearProgress } from "@mui/material";
+import { useState, useEffect } from "react";
+import { Box, Typography, Button, LinearProgress, CircularProgress } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
-import { ArrowLeft, CircleX, MessageCircle, Eye, Layers3, ChevronRight } from "lucide-react";
-import Crossover from "../assets/crossover.jpg";
-import Catch from "../assets/catch.jpg";
-import Defense from "../assets/defense.jpg";
-import Eurostep from "../assets/eurostep.jpg";
+import {
+  ArrowLeft,
+  CircleX,
+  MessageCircle,
+  Eye,
+  Layers3,
+  ChevronRight,
+  GripVertical,
+  X,
+} from "lucide-react";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import { getProgram, updateProgram, removeDrillFromProgram } from "../services/api";
+
+const getDrillId = (item, i) => {
+  const id = item.drill?._id || item._id;
+  return id ? String(id) : `drill-${i}`;
+};
+
+const SortableDrillRow = ({ id, index, item, onOpen, onRemove }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const drill = item.drill;
+  const drillName =
+    drill && typeof drill === "object" ? drill.title || drill.name || "" : "";
+  const pct =
+    drill && typeof drill === "object" ? drill.completionRate || 0 : 0;
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      sx={{
+        bgcolor: "#1F1F1F",
+        borderRadius: "10px",
+        px: 1.5,
+        py: 1.5,
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+      }}
+    >
+      <Box
+        {...attributes}
+        {...listeners}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          cursor: "grab",
+          touchAction: "none",
+        }}
+      >
+        <GripVertical size={16} color="#FFFFFF" />
+      </Box>
+
+      <Typography
+        sx={{
+          fontFamily: "Poppins",
+          fontWeight: 500,
+          fontSize: "13px",
+          color: "#6B6B6B",
+          minWidth: 20,
+        }}
+      >
+        {index + 1}
+      </Typography>
+
+      {drill?.imageUrl ? (
+        <Box
+          component="img"
+          src={drill.imageUrl}
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: "8px",
+            objectFit: "cover",
+            flexShrink: 0,
+          }}
+        />
+      ) : (
+        <Box
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: "8px",
+            bgcolor: "#2A2A2A",
+            flexShrink: 0,
+          }}
+        />
+      )}
+
+      <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Typography
+          sx={{
+            fontFamily: "Poppins",
+            fontWeight: 500,
+            fontSize: "14px",
+            color: "#FFFFFF",
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}
+        >
+          {drillName}
+        </Typography>
+        {drill && (drill.coach || drill.category) ? (
+          <Typography
+            sx={{
+              fontFamily: "Poppins",
+              fontWeight: 500,
+              fontSize: "11px",
+              color: "#929292",
+            }}
+          >
+            {drill.coach ? `${drill.coach} • ` : ""}
+            {drill.category || ""}
+          </Typography>
+        ) : null}
+      </Box>
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+        <Typography
+          sx={{
+            fontFamily: "Poppins",
+            fontWeight: 500,
+            fontSize: "11px",
+            color: "#FFFFFF",
+            minWidth: 35,
+          }}
+        >
+          {pct}% Complete
+        </Typography>
+        <Box sx={{ width: 90 }}>
+          <LinearProgress
+            variant="determinate"
+            value={pct}
+            sx={{
+              height: 8,
+              borderRadius: 4,
+              bgcolor: "#2A2A2A",
+              "& .MuiLinearProgress-bar": {
+                bgcolor: "#22C55E",
+                borderRadius: 4,
+              },
+            }}
+          />
+        </Box>
+      </Box>
+
+      <ChevronRight
+        size={16}
+        color="#FFFFFF"
+        style={{ cursor: "pointer" }}
+        onClick={onOpen}
+      />
+
+      <Box
+        onClick={(e) => {
+          e.stopPropagation();
+          if (onRemove) onRemove(id);
+        }}
+        title="Remove from program"
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          cursor: "pointer",
+          color: "#6B6B6B",
+          "&:hover": { color: "#E50914" },
+        }}
+      >
+        <X size={16} />
+      </Box>
+    </Box>
+  );
+};
 
 export default function ProgramDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const program = location.state?.program || { name: "Program", level: "", duration: "" };
-  const drillName = location.state?.drillName || "Killer Crossover";
+  const [program, setProgram] = useState(location.state?.program || null);
+  const [loading, setLoading] = useState(!program);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  useEffect(() => {
+    let active = true;
+    getProgram(id)
+      .then((res) => {
+        if (active) setProgram(res.data.program);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [id]);
+
+  const progDrills = (program?.drills || [])
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const sortableIds = progDrills.map((item, i) => getDrillId(item, i));
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id || !program) return;
+
+    const oldIndex = sortableIds.indexOf(active.id);
+    const newIndex = sortableIds.indexOf(over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    const reordered = arrayMove(progDrills, oldIndex, newIndex).map(
+      (d, i) => ({ ...d, order: i + 1 })
+    );
+    const payload = reordered.map((d) => ({
+      drill: d.drill?._id || d.drill,
+      order: d.order,
+    }));
+    setProgram((prev) => (prev ? { ...prev, drills: reordered } : prev));
+    updateProgram(id, { drills: payload }).catch(() => {});
+  };
+
+  const handleRemoveDrill = (drillId) => {
+    removeDrillFromProgram(id, drillId)
+      .then((res) => {
+        if (res.data?.program) setProgram(res.data.program);
+      })
+      .catch(() => {});
+  };
+
+  const statusLabel = program?.status
+    ? program.status.charAt(0).toUpperCase() + program.status.slice(1)
+    : "Published";
+
+  const stats = [
+    { value: program?.enrolled ?? 0, label: "Enrolled" },
+    {
+      value: program?.completionRate ? `${program.completionRate}%` : "0%",
+      label: "Completion",
+    },
+    { value: program?.reviews ?? 0, label: "Reviews" },
+  ];
 
   return (
     <Box>
@@ -53,7 +311,7 @@ export default function ProgramDetails() {
           mb: 1,
         }}
       >
-        {drillName}
+        {program?.name || "Program"}
       </Typography>
 
       <Typography
@@ -65,7 +323,9 @@ export default function ProgramDetails() {
           mb: 3,
         }}
       >
-        {program.name} . {program.level} . {program.duration}
+        {[program?.level, program?.category, program?.duration]
+          .filter(Boolean)
+          .join(" . ")}
       </Typography>
 
       <Box
@@ -100,7 +360,7 @@ export default function ProgramDetails() {
                 color: "#22C55E",
               }}
             >
-              Published
+              {statusLabel}
             </Typography>
           </Box>
         </Box>
@@ -157,7 +417,6 @@ export default function ProgramDetails() {
         </Box>
       </Box>
 
-    
       <Box
         sx={{
           display: "grid",
@@ -166,21 +425,17 @@ export default function ProgramDetails() {
           mt: 3,
         }}
       >
-        {[
-          { value: "421", label: "Enrolled" },
-          { value: "87%", label: "Completion" },
-          { value: "4.5", label: "Reviews" },
-        ].map((stat) => (
+        {stats.map((stat) => (
           <Box
             key={stat.label}
             sx={{
               bgcolor: "#161616",
               border: "1px solid #1F1F1F",
               boxShadow: "0px 4px 12px #00000066",
-            borderRadius: "12px",
-            textAlign: "left",
-            px: { xs: 1.5, sm: 2.5 },
-            py: { xs: 1.5, sm: 2.5 },
+              borderRadius: "12px",
+              textAlign: "left",
+              px: { xs: 1.5, sm: 2.5 },
+              py: { xs: 1.5, sm: 2.5 },
             }}
           >
             <Typography sx={{ fontFamily: "Poppins", fontWeight: 600, fontSize: "15px", color: "#FFFFFF", mb: 0.5 }}>
@@ -205,7 +460,7 @@ export default function ProgramDetails() {
         {/* Left - Drill Timeline */}
         <Box
           sx={{
-            width: { md: "50%" },
+            width: { md: "55%" },
             bgcolor: "#161616",
             border: "1px solid #1F1F1F",
             boxShadow: "0px 4px 20px #00000066",
@@ -213,66 +468,98 @@ export default function ProgramDetails() {
             p: { xs: 1.5, sm: 2.5 },
           }}
         >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+            <Typography
+              sx={{
+                fontFamily: "Poppins",
+                fontWeight: 500,
+                fontSize: "16px",
+                color: "#FFFFFF",
+              }}
+            >
+              Drill Timeline
+            </Typography>
+            <Box
+              sx={{
+                bgcolor: "#2A2A2A",
+                borderRadius: "6px",
+                px: 1.2,
+                py: 0.3,
+              }}
+            >
+              <Typography
+                sx={{
+                  fontFamily: "Poppins",
+                  fontWeight: 500,
+                  fontSize: "12px",
+                  color: "#FFFFFF",
+                }}
+              >
+                {progDrills.length}
+              </Typography>
+            </Box>
+          </Box>
+
+          {loading ? (
+            <Box sx={{ display: "flex", justifyContent: "center", py: 5 }}>
+              <CircularProgress sx={{ color: "#E50914" }} />
+            </Box>
+          ) : progDrills.length === 0 ? (
+            <Typography
+              sx={{
+                fontFamily: "Poppins",
+                fontWeight: 400,
+                fontSize: "13px",
+                color: "#6B6B6B",
+                textAlign: "center",
+                py: 5,
+              }}
+            >
+              No drills in this program yet
+            </Typography>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={sortableIds}
+                strategy={verticalListSortingStrategy}
+              >
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+                  {progDrills.map((item, i) => (
+                    <SortableDrillRow
+                      key={sortableIds[i]}
+                      id={sortableIds[i]}
+                      index={i}
+                      item={item}
+                      onOpen={() => navigate(`/drill/${getDrillId(item, i)}`)}
+                      onRemove={handleRemoveDrill}
+                    />
+                  ))}
+                </Box>
+              </SortableContext>
+            </DndContext>
+          )}
+
           <Typography
             sx={{
               fontFamily: "Poppins",
-              fontWeight: 500,
-              fontSize: "16px",
-              color: "#FFFFFF",
-              mb: 2,
+              fontWeight: 400,
+              fontSize: "12px",
+              color: "#6B6B6B",
+              mt: 2,
             }}
           >
-            Drill Timeline
+            Drag the handle to reorder drills
           </Typography>
-
-          <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-            {[
-              { name: "Killer Crossover", pct: 92 },
-              { name: "Hesitation Pull-up", pct: 78 },
-              { name: "In & Out Dribble", pct: 45 },
-              { name: "Between Legs Finish", pct: 63 },
-            ].map((d) => (
-              <Box
-                key={d.name}
-                sx={{
-                  bgcolor: "#1F1F1F",
-                  borderRadius: "10px",
-                  px: 1.5,
-                  py: 1.5,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0,
-                }}
-              >
-                <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "14px", color: "#FFFFFF", minWidth: 120, mr: 1.5 }}>
-                  {d.name}
-                </Typography>
-                <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "11px", color: "#FFFFFF", minWidth: 35, mr: 0.8 }}>
-                  {d.pct}% Complete  
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={d.pct}
-                  sx={{
-                    flex: 1,
-                    height: 9,
-                    borderRadius: 4,
-                    bgcolor: "#2A2A2A",
-                    "& .MuiLinearProgress-bar": {
-                      bgcolor: "#22C55E",
-                      borderRadius: 4,
-                    },
-                  }}
-                />
-              </Box>
-            ))}
-          </Box>
         </Box>
 
         {/* Right - Enrolled Users */}
         <Box
           sx={{
-            width: { md: "50%" },
+            width: { md: "45%" },
             bgcolor: "#161616",
             border: "1px solid #1F1F1F",
             boxShadow: "0px 4px 20px #00000066",
@@ -318,7 +605,6 @@ export default function ProgramDetails() {
           </Box>
         </Box>
       </Box>
-
     </Box>
   );
 }

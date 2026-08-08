@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -13,84 +13,336 @@ import {
 
 import {
   Layers3,
-  Upload,
   Search,
-  Filter,
   ChevronDown,
-  ChevronUp,
   ChevronRight,
-  LayoutGrid,
-  List,
-  Eye,
   Plus,
   GripVertical,
   X,
 } from "lucide-react";
-import Catch from "../assets/catch.jpg";
-import Crossover from "../assets/crossover.jpg";
-import Defense from "../assets/defense.jpg";
-import Eurostep from "../assets/eurostep.jpg";
 import { useNavigate } from "react-router-dom";
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from "@dnd-kit/core";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import {
+  getCategories,
+  createCategory,
+  getPrograms,
+  createProgram,
+  updateProgram,
+} from "../services/api";
 
-const FALLBACK_PROGRAMS = [
-  { id: 1, title: "Elite Guard Package", coach: "Coach Marcus", category: "Dribbling", drills: "12 drills", image: Crossover },
-  { id: 2, title: "Sharpshooter Program", coach: "Coach Daniel", category: "Shooting", drills: "8 drills", image: Catch },
-  { id: 3, title: "Lockdown Defender", coach: "Coach Alex", category: "Defense", drills: "10 drills", image: Defense },
-  { id: 4, title: "Finishing School", coach: "Coach Ryan", category: "Finishing", drills: "6 drills", image: Eurostep },
-  { id: 5, title: "Ball Handling Mastery", coach: "Coach Mike", category: "Dribbling", drills: "15 drills", image: Crossover },
-  { id: 6, title: "Playmaker Blueprint", coach: "Coach James", category: "Playmaking", drills: "9 drills", image: Catch },
-  { id: 7, title: "Footwork Foundation", coach: "Coach Ethan", category: "Footwork", drills: "7 drills", image: Defense },
-  { id: 8, title: "Scoring Arsenal", coach: "Coach Noah", category: "Offense", drills: "11 drills", image: Eurostep },
-];
+const getDrillId = (item, i) => {
+  const id = item.drill?._id || item._id;
+  return id ? String(id) : `drill-${i}`;
+};
+
+const SortableDrillRow = ({ id, index, item, onOpen }) => {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id });
+
+  const drill = item.drill;
+  const drillName =
+    drill && typeof drill === "object" ? drill.title || drill.name || "" : "";
+
+  return (
+    <Box
+      ref={setNodeRef}
+      style={{
+        transform: CSS.Transform.toString(transform),
+        transition,
+        opacity: isDragging ? 0.5 : 1,
+      }}
+      sx={{
+        display: "flex",
+        alignItems: "center",
+        gap: 1.5,
+        bgcolor: "#1F1F1F",
+        border: "1px solid #2A2A2A",
+        borderRadius: "10px",
+        px: 1.5,
+        py: 1.3,
+      }}
+    >
+      <Box
+        {...attributes}
+        {...listeners}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          cursor: "grab",
+          touchAction: "none",
+        }}
+      >
+        <GripVertical size={16} color="#FFFFFF" />
+      </Box>
+
+      <Typography
+        sx={{
+          fontFamily: "Poppins",
+          fontWeight: 500,
+          fontSize: "13px",
+          color: "#6B6B6B",
+          minWidth: 20,
+        }}
+      >
+        {index + 1}
+      </Typography>
+
+      <Typography
+        sx={{
+          fontFamily: "Poppins",
+          fontWeight: 500,
+          fontSize: "13px",
+          color: "#FFFFFF",
+          flex: 1,
+        }}
+      >
+        {drillName}
+      </Typography>
+
+      <ChevronRight
+        size={16}
+        color="#FFFFFF"
+        style={{ cursor: "pointer" }}
+        onClick={onOpen}
+      />
+    </Box>
+  );
+};
+
+const ProgramCard = ({ program, onReorder, onOpen }) => {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const progDrills = (program.drills || [])
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
+  const sortableIds = progDrills.map((item, i) => getDrillId(item, i));
+
+  const handleDragEnd = (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = sortableIds.indexOf(active.id);
+    const newIndex = sortableIds.indexOf(over.id);
+    if (oldIndex < 0 || newIndex < 0) return;
+
+    onReorder(program._id, arrayMove(progDrills, oldIndex, newIndex));
+  };
+
+  return (
+    <Box
+      sx={{
+        bgcolor: "#161616",
+        border: "1px solid #1F1F1F",
+        boxShadow: "0px 4px 20px #00000066",
+        borderRadius: "12px",
+        p: { xs: 1.5, sm: 2.5 },
+      }}
+    >
+      {/* Header */}
+      <Box
+        onClick={() => onOpen(program, null)}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          mb: 2,
+          cursor: "pointer",
+          "&:hover .program-title": { color: "#22C55E" },
+        }}
+      >
+        <Box
+          sx={{
+            width: 44,
+            height: 44,
+            borderRadius: "50%",
+            bgcolor: "#E50914",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <Layers3 size={20} color="#FFFFFF" />
+        </Box>
+        <Typography
+          className="program-title"
+          sx={{
+            fontFamily: "Poppins",
+            fontWeight: 600,
+            fontSize: "16px",
+            color: "#FFFFFF",
+            transition: "color .2s",
+          }}
+        >
+          {program.name}
+        </Typography>
+        <ChevronRight
+          size={16}
+          color="#FFFFFF"
+          style={{ marginLeft: "auto", flexShrink: 0 }}
+        />
+      </Box>
+
+      {/* Tags */}
+      <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
+        <Box sx={{ bgcolor: "#1F1F1F", borderRadius: "8px", px: 2, py: 0.6 }}>
+          <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "12px", color: "#FFFFFF" }}>
+            {program.level}
+          </Typography>
+        </Box>
+        <Box sx={{ bgcolor: "#1F1F1F", borderRadius: "8px", px: 2, py: 0.6 }}>
+          <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "12px", color: "#FFFFFF" }}>
+            {program.category}
+          </Typography>
+        </Box>
+        <Box sx={{ bgcolor: "#1F1F1F", borderRadius: "8px", px: 2, py: 0.6 }}>
+          <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "12px", color: "#FFFFFF" }}>
+            {program.duration} weeks
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Divider */}
+      <Box sx={{ height: "1px", bgcolor: "#1F1F1F", mb: 2 }} />
+
+      {/* Drill Order Label */}
+      <Typography
+        sx={{
+          fontFamily: "Poppins",
+          fontWeight: 400,
+          fontSize: "13px",
+          color: "#6B6B6B",
+          mb: 1.5,
+        }}
+      >
+        Drill order (drag to reorder)
+      </Typography>
+
+      {/* Drill List */}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            {progDrills.length === 0 ? (
+              <Typography sx={{ fontFamily: "Poppins", fontWeight: 400, fontSize: "13px", color: "#6B6B6B", textAlign: "center", py: 2 }}>
+                No drills yet
+              </Typography>
+            ) : (
+              progDrills.map((item, i) => (
+                <SortableDrillRow
+                  key={sortableIds[i]}
+                  id={sortableIds[i]}
+                  index={i}
+                  item={item}
+                  onOpen={() => onOpen(program, item)}
+                />
+              ))
+            )}
+          </Box>
+        </SortableContext>
+      </DndContext>
+    </Box>
+  );
+};
 
 export default function ProgramsCategories() {
   const navigate = useNavigate();
-  const [programs] = useState(FALLBACK_PROGRAMS);
+  const [categories, setCategories] = useState([]);
+  const [programs, setPrograms] = useState([]);
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
+  const [filterCategory, setFilterCategory] = useState("all");
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [addCatModalOpen, setAddCatModalOpen] = useState(false);
+  const [newCatName, setNewCatName] = useState("");
+  const [createName, setCreateName] = useState("");
+  const [createLevel, setCreateLevel] = useState("Beginner");
+  const [createCat, setCreateCat] = useState("");
+  const [createDuration, setCreateDuration] = useState("4 weeks");
+  const [loading, setLoading] = useState(true);
 
-  const [programDrills, setProgramDrills] = useState({
-    "Elite Guard Package": ["Killer Crossover", "Hesitation Pull-up", "In & Out Dribble", "Between Legs Finish"],
-    "Sharpshooter Program": ["Catch & Shoot", "Off Screen", "Spot Up", "Step Back"],
-  });
+  useEffect(() => {
+    Promise.all([
+      getCategories(),
+      getPrograms({ search, category: filterCategory }),
+    ])
+      .then(([catRes, progRes]) => {
+        setCategories(catRes.data.categories || []);
+        setPrograms(progRes.data.programs || []);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
 
-  const [dragIndex, setDragIndex] = useState(null);
-  const [dragProgram, setDragProgram] = useState(null);
-
-  const handleDragStart = (programName, index) => {
-    setDragIndex(index);
-    setDragProgram(programName);
+  const fetchPrograms = (q, cat) => {
+    getPrograms({ search: q, category: cat })
+      .then((res) => setPrograms(res.data.programs || []))
+      .catch(() => {});
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
+  const handleAddCategory = () => {
+    if (!newCatName.trim()) return;
+    createCategory({ name: newCatName.trim() })
+      .then(() => {
+        setNewCatName("");
+        setAddCatModalOpen(false);
+        return getCategories();
+      })
+      .then((res) => setCategories(res.data.categories || []))
+      .catch(() => {});
   };
 
-  const handleDrop = (programName, dropIndex) => {
-    if (dragProgram !== programName || dragIndex === null || dragIndex === dropIndex) {
-      setDragIndex(null);
-      setDragProgram(null);
-      return;
-    }
-    setProgramDrills((prev) => {
-      const drills = [...prev[programName]];
-      const [moved] = drills.splice(dragIndex, 1);
-      drills.splice(dropIndex, 0, moved);
-      return { ...prev, [programName]: drills };
-    });
-    setDragIndex(null);
-    setDragProgram(null);
+  const handleCreateProgram = () => {
+    if (!createName.trim()) return;
+    createProgram({ name: createName, level: createLevel, category: createCat, duration: createDuration })
+      .then(() => {
+        setCreateName("");
+        setCreateLevel("Beginner");
+        setCreateCat("");
+        setCreateDuration("4 weeks");
+        setCreateModalOpen(false);
+        return getPrograms({ search, category: filterCategory });
+      })
+      .then((res) => setPrograms(res.data.programs || []))
+      .catch(() => {});
   };
 
-  const moveDrill = (programName, fromIndex, toIndex) => {
-    setProgramDrills((prev) => {
-      const drills = [...prev[programName]];
-      if (toIndex < 0 || toIndex >= drills.length) return prev;
-      const [moved] = drills.splice(fromIndex, 1);
-      drills.splice(toIndex, 0, moved);
-      return { ...prev, [programName]: drills };
-    });
+  const handleReorder = (programId, reordered) => {
+    setPrograms((prev) =>
+      prev.map((p) => {
+        if (p._id !== programId) return p;
+        const withOrder = reordered.map((d, i) => ({ ...d, order: i + 1 }));
+        const payload = withOrder.map((d) => ({
+          drill: d.drill?._id || d.drill,
+          order: d.order,
+        }));
+        updateProgram(programId, { drills: payload }).catch(() => {});
+        return { ...p, drills: withOrder };
+      })
+    );
   };
 
   return (
@@ -177,6 +429,7 @@ export default function ProgramsCategories() {
         </Button>
       </Box>
 
+    
       {/* Categories + Programs side by side */}
       <Box
         sx={{
@@ -211,13 +464,7 @@ export default function ProgramsCategories() {
 
           <Box sx={{ height: "1px", bgcolor: "#1F1F1F", mb: 0.5 }} />
 
-          {[
-            { name: "Dribbling", count: 12 },
-            { name: "Shooting", count: 8 },
-            { name: "Defence", count: 6 },
-            { name: "Finishing", count: 10 },
-            { name: "Fitness", count: 4 },
-          ].map((cat) => (
+          {categories.map((cat) => (
             <Box
               key={cat.name}
               sx={{
@@ -253,7 +500,7 @@ export default function ProgramsCategories() {
                     color: "#FFFFFF",
                   }}
                 >
-                  {cat.count}
+                  {cat.drillCount}
                 </Typography>
               </Box>
             </Box>
@@ -261,6 +508,7 @@ export default function ProgramsCategories() {
 
           <Button
             startIcon={<Plus size={16} color="#FFFFFF" />}
+            onClick={() => setAddCatModalOpen(true)}
             sx={{
               mt: 1,
               width: "100%",
@@ -293,141 +541,25 @@ export default function ProgramsCategories() {
             gap: 2,
           }}
         >
-          {[
-            {
-              name: "Elite Guard Package",
-              level: "Advanced",
-              category: "Dribbling",
-              duration: "12 weeks",
-            },
-            {
-              name: "Sharpshooter Program",
-              level: "Intermediate",
-              category: "Shooting",
-              duration: "8 weeks",
-            },
-          ].map((program) => {
-            const drills = programDrills[program.name] || [];
-            return (
-            <Box
-              key={program.name}
-              sx={{
-                bgcolor: "#161616",
-                border: "1px solid #1F1F1F",
-                boxShadow: "0px 4px 20px #00000066",
-                borderRadius: "12px",
-                p: { xs: 1.5, sm: 2.5 },
+          {programs.map((program) => (
+            <ProgramCard
+              key={program._id}
+              program={program}
+              onReorder={handleReorder}
+              onOpen={(prog, item) => {
+                const drill =
+                  item && item.drill && typeof item.drill === "object"
+                    ? item.drill
+                    : null;
+                const drillName = drill
+                  ? drill.title || drill.name || ""
+                  : "";
+                navigate(`/program/${prog._id}`, {
+                  state: { program: prog, drillName },
+                });
               }}
-            >
-              {/* Header */}
-              <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}>
-                <Box
-                  sx={{
-                    width: 44,
-                    height: 44,
-                    borderRadius: "50%",
-                    bgcolor: "#E50914",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Layers3 size={20} color="#FFFFFF" />
-                </Box>
-                <Typography sx={{ fontFamily: "Poppins", fontWeight: 600, fontSize: "16px", color: "#FFFFFF" }}>
-                  {program.name}
-                </Typography>
-              </Box>
-
-              {/* Tags */}
-              <Box sx={{ display: "flex", gap: 1, mb: 2, flexWrap: "wrap" }}>
-                <Box sx={{ bgcolor: "#1F1F1F", borderRadius: "8px", px: 2, py: 0.6 }}>
-                  <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "12px", color: "#FFFFFF" }}>
-                    {program.level}
-                  </Typography>
-                </Box>
-                <Box sx={{ bgcolor: "#1F1F1F", borderRadius: "8px", px: 2, py: 0.6 }}>
-                  <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "12px", color: "#FFFFFF" }}>
-                    {program.category}
-                  </Typography>
-                </Box>
-                <Box sx={{ bgcolor: "#1F1F1F", borderRadius: "8px", px: 2, py: 0.6 }}>
-                  <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "12px", color: "#FFFFFF" }}>
-                    {program.duration}
-                  </Typography>
-                </Box>
-              </Box>
-
-              {/* Divider */}
-              <Box sx={{ height: "1px", bgcolor: "#1F1F1F", mb: 2 }} />
-
-              {/* Drill Order Label */}
-              <Typography
-                sx={{
-                  fontFamily: "Poppins",
-                  fontWeight: 400,
-                  fontSize: "13px",
-                  color: "#6B6B6B",
-                  mb: 1.5,
-                }}
-              >
-                Drill order (drag to reorder)
-              </Typography>
-
-              {/* Drill List */}
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                {drills.map((drill, i) => (
-                  <Box
-                    key={drill}
-                    draggable
-                    onDragStart={() => handleDragStart(program.name, i)}
-                    onDragOver={handleDragOver}
-                    onDrop={() => handleDrop(program.name, i)}
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 1.5,
-                      bgcolor: "#1F1F1F",
-                      border: "1px solid #2A2A2A",
-                      borderRadius: "10px",
-                      px: 1.5,
-                      py: 1.3,
-                      opacity: dragProgram === program.name && dragIndex === i ? 0.4 : 1,
-                    }}
-                  >
-                    <GripVertical size={16} color="#FFFFFF" style={{ cursor: "grab" }} />
-                    <Typography
-                      sx={{
-                        fontFamily: "Poppins",
-                        fontWeight: 500,
-                        fontSize: "13px",
-                        color: "#6B6B6B",
-                        minWidth: 20,
-                      }}
-                    >
-                      {i + 1}
-                    </Typography>
-                    <Typography
-                      sx={{
-                        fontFamily: "Poppins",
-                        fontWeight: 500,
-                        fontSize: "13px",
-                        color: "#FFFFFF",
-                        flex: 1,
-                      }}
-                    >
-                      {drill}
-                    </Typography>
-                    <ChevronUp size={16} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => moveDrill(program.name, i, i - 1)} />
-                    <ChevronDown size={16} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => moveDrill(program.name, i, i + 1)} />
-                    <ChevronRight size={16} color="#FFFFFF" style={{ cursor: "pointer" }} onClick={() => navigate(`/program/${i + 1}`, { state: { program, drillName: drill } })} />
-                  </Box>
-                ))}
-              </Box>
-            </Box>
-            );
-          })}
+            />
+          ))}
         </Box>
       </Box>
 
@@ -468,6 +600,8 @@ export default function ProgramsCategories() {
             placeholder="E.g Big foot man"
             variant="outlined"
             fullWidth
+            value={createName}
+            onChange={(e) => setCreateName(e.target.value)}
             sx={{
               mb: 2.5,
               "& .MuiOutlinedInput-root": {
@@ -498,7 +632,8 @@ export default function ProgramsCategories() {
                 Category
               </Typography>
               <Select
-                defaultValue="all"
+                value={createCat}
+                onChange={(e) => setCreateCat(e.target.value)}
                 fullWidth
                 MenuProps={{
                   PaperProps: {
@@ -532,11 +667,11 @@ export default function ProgramsCategories() {
                 IconComponent={(props) => <ChevronDown {...props} size={18} color="#929292" />}
               >
                 <MenuItem value="all">All Categories</MenuItem>
-                <MenuItem value="dribbling">Dribbling</MenuItem>
-                <MenuItem value="shooting">Shooting</MenuItem>
-                <MenuItem value="defence">Defence</MenuItem>
-                <MenuItem value="passing">Passing</MenuItem>
-                <MenuItem value="fitness">Fitness</MenuItem>
+                <MenuItem value="Dribbling">Dribbling</MenuItem>
+                <MenuItem value="Shooting">Shooting</MenuItem>
+                <MenuItem value="Defence">Defence</MenuItem>
+                <MenuItem value="Passing">Passing</MenuItem>
+                <MenuItem value="Fitness">Fitness</MenuItem>
               </Select>
             </Box>
             <Box sx={{ flex: 1 }}>
@@ -544,7 +679,8 @@ export default function ProgramsCategories() {
                 Level
               </Typography>
               <Select
-                defaultValue="beginner"
+                value={createLevel}
+                onChange={(e) => setCreateLevel(e.target.value)}
                 fullWidth
                 MenuProps={{
                   PaperProps: {
@@ -577,9 +713,9 @@ export default function ProgramsCategories() {
                 }}
                 IconComponent={(props) => <ChevronDown {...props} size={18} color="#929292" />}
               >
-                <MenuItem value="beginner">Beginner</MenuItem>
-                <MenuItem value="intermediate">Intermediate</MenuItem>
-                <MenuItem value="advanced">Advanced</MenuItem>
+                <MenuItem value="Beginner">Beginner</MenuItem>
+                <MenuItem value="Intermediate">Intermediate</MenuItem>
+                <MenuItem value="Advanced">Advanced</MenuItem>
               </Select>
             </Box>
           </Box>
@@ -589,7 +725,8 @@ export default function ProgramsCategories() {
             Duration
           </Typography>
           <Select
-            defaultValue="4"
+            value={createDuration}
+            onChange={(e) => setCreateDuration(e.target.value)}
             fullWidth
             MenuProps={{
               PaperProps: {
@@ -650,6 +787,7 @@ export default function ProgramsCategories() {
               Cancel
             </Button>
             <Button
+              onClick={handleCreateProgram}
               sx={{
                 bgcolor: "#E50914",
                 color: "#FFFFFF",
@@ -666,6 +804,103 @@ export default function ProgramsCategories() {
               }}
             >
               Create
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Category Modal */}
+      <Dialog
+        open={addCatModalOpen}
+        onClose={() => setAddCatModalOpen(false)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "16px",
+            boxShadow: "0px 4px 20px #00000066",
+            m: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 600, fontSize: "20px", color: "#FFFFFF" }}>
+              Add Category
+            </Typography>
+            <IconButton onClick={() => { setAddCatModalOpen(false); setNewCatName(""); }} sx={{ color: "#FFFFFF", p: 0 }}>
+              <X size={20} />
+            </IconButton>
+          </Box>
+          <Box sx={{ height: "1px", bgcolor: "#1A1A1A", mb: 3 }} />
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+            Category Name
+          </Typography>
+          <TextField
+            placeholder="e.g. Finishing"
+            variant="outlined"
+            fullWidth
+            value={newCatName}
+            onChange={(e) => setNewCatName(e.target.value)}
+            sx={{
+              mb: 3,
+              "& .MuiOutlinedInput-root": {
+                bgcolor: "#121212",
+                borderRadius: "10px",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 500,
+                fontSize: "14px",
+                "& fieldset": { borderColor: "#1A1A1A" },
+                "&:hover fieldset": { borderColor: "#1A1A1A" },
+                "&.Mui-focused fieldset": { borderColor: "#1A1A1A" },
+              },
+              "& input::placeholder": {
+                color: "#5A5A5A",
+                fontFamily: "Inter",
+                fontWeight: 500,
+                fontSize: "14px",
+                opacity: 1,
+              },
+            }}
+          />
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+            <Button
+              onClick={() => { setAddCatModalOpen(false); setNewCatName(""); }}
+              sx={{
+                bgcolor: "#1F1F1F",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                "&:hover": { bgcolor: "#1F1F1F" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAddCategory}
+              sx={{
+                bgcolor: "#E50914",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                boxShadow: "0px 4px 20px #F81B1B40",
+                "&:hover": { bgcolor: "#E50914" },
+              }}
+            >
+              Add
             </Button>
           </Box>
         </DialogContent>

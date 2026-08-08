@@ -9,6 +9,11 @@ import ProgramDetails from "./pages/ProgramDetails";
 import DashboardLayout from "./layouts/DashboardLayout";
 import DrillDetails from "./pages/DrillDetails";
 import CoachDetails from "./pages/CoachDetails";
+import LearnFromThePros from "./pages/LearnFromThePros";
+import Users from "./pages/Users";
+import UserDetails from "./pages/UserDetails";
+import Podcast from "./pages/Podcast";
+import PodcastDetails from "./pages/PodcastDetails";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("admin-token");
@@ -36,6 +41,11 @@ function App() {
           <Route path="/program/:id" element={<ProgramDetails />} />
           <Route path="/drill/:id" element={<DrillDetails />} />
           <Route path="/coach/:id" element={<CoachDetails />} />
+          <Route path="/pros" element={<LearnFromThePros />} />
+          <Route path="/users" element={<Users />} />
+          <Route path="/user/:id" element={<UserDetails />} />
+          <Route path="/podcasts" element={<Podcast />} />
+          <Route path="/podcast/:id" element={<PodcastDetails />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

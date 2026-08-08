@@ -57,10 +57,12 @@ export default function Sidebar() {
   {
     title: "Learn from the Pros",
     icon: GraduationCap,
+    path: "/pros",
   },
   {
     title: "Podcasts",
     icon: Podcast,
+    path: "/podcasts",
   },
 
 ];
@@ -69,6 +71,7 @@ const peopleItems = [
   {
     title: "Users",
     icon: Users,
+    path: "/users",
   },
   {
     title: "Subscription",
@@ -299,10 +302,12 @@ const systemItems = [
 
 {peopleItems.map((item) => {
   const Icon = item.icon;
+  const isActive = item.path && location.pathname === item.path;
 
   return (
     <Box
       key={item.title}
+      onClick={() => item.path && navigate(item.path)}
       sx={{
         display: "flex",
         alignItems: "center",
@@ -310,18 +315,20 @@ const systemItems = [
         px: 1,
         py: 1.4,
         borderRadius: "10px",
-        cursor: "pointer",
+        cursor: item.path ? "pointer" : "default",
         justifyContent: "flex-start",
         transition: "all .2s",
+        border: "1px solid transparent",
+        ...(isActive ? activeSx : {}),
 
         "&:hover": {
-          bgcolor: "#111111",
+          bgcolor: isActive ? "#242424" : "#111111",
         },
       }}
     >
       <Icon
         size={20}
-        color="#929292"
+        color={isActive ? "#FFFFFF" : "#929292"}
         style={{ minWidth: 20 }}
       />
 
@@ -331,7 +338,7 @@ const systemItems = [
             fontFamily: "Poppins",
             fontWeight: 500,
             fontSize: "13px",
-            color: "#929292",
+            color: isActive ? "#FFFFFF" : "#929292",
             whiteSpace: "nowrap",
           }}
         >
