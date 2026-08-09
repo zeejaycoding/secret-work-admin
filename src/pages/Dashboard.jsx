@@ -1,5 +1,5 @@
   
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import {
   Box,
   Typography,
@@ -28,9 +28,11 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  Tooltip,
 } from "recharts";
 
 import { getDashboardStats } from "../services/api";
+import usePolling from "../hooks/usePolling";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 
@@ -40,13 +42,28 @@ export default function Dashboard() {
   const [data, setData] = useState(null);
   const [drills, setDrills] = useState([]);
   const [loading, setLoading] = useState(true);
+  const hasLoaded = useRef(false);
 
-  useEffect(() => {
+  usePolling(() => {
+    if (!hasLoaded.current) setLoading(true);
     getDashboardStats()
       .then((res) => setData(res.data))
       .catch(() => {})
-      .finally(() => setLoading(false));
-  }, []);
+      .finally(() => {
+        hasLoaded.current = true;
+        setLoading(false);
+      });
+  }, 30000);
+
+  const money = (n) =>
+    n == null
+      ? "—"
+      : n.toLocaleString(undefined, {
+          style: "currency",
+          currency: "USD",
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2,
+        });
 
   const stats = [
     {
@@ -61,45 +78,74 @@ export default function Dashboard() {
     },
     {
       title: "Watch Time",
-      value: data?.totalViews ? data.totalViews.toLocaleString() : "—",
+      value: data?.watchTimeHours != null ? `${data.watchTimeHours} hrs` : "—",
       icon: Clock3,
     },
     {
       title: "Revenue",
-      value: data?.totalDrills?.toLocaleString() ?? "—",
+      value: money(data?.revenue),
       icon: CircleDollarSign,
     },
     {
       title: "Podcast Plays",
-      value: data?.freeUsers?.toLocaleString() ?? "—",
+      value: data?.podcastPlays?.toLocaleString() ?? "—",
       icon: Headphones,
     },
   ];
 
 const chartData = MONTHS.map((m, i) => {
   const match = (data?.monthlySignups || []).find((s) => s._id.month === i + 1);
-  return { month: m, users: match?.count || 0, revenue: Math.round((match?.count || 0) * 0.7) };
+  const rev = (data?.monthlyRevenue || []).find((r) => r._id.month === i + 1);
+  return { month: m, users: match?.count || 0, revenue: rev?.total || 0 };
 });
 
-const activities = (data?.recentUsers || []).length > 0
-  ? data.recentUsers.map((u) => ({
-      icon: UserPlus,
-      title: `${u.firstName || u.name || "New user"} joined`,
-      time: u.email,
-    }))
-  : [
-      { icon: UserPlus, title: "New user joined", time: "5 mins ago" },
-      { icon: BadgeCheck, title: "Subscription renewed", time: "18 mins ago" },
-      { icon: PlayCircle, title: "Podcast published", time: "42 mins ago" },
-      { icon: BookOpen, title: "New drill uploaded", time: "1 hour ago" },
-      { icon: Bell, title: "System notification", time: "2 hours ago" },
-    ];
+const timeAgo = (iso) => {
+  if (!iso) return "";
+  const diff = Date.now() - new Date(iso).getTime();
+  if (diff < 60000) return "just now";
+  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+};
 
-const drillCompletion = (data?.recentUsers || []).length > 0
-  ? data.recentUsers.slice(0, 4).map((u, i) => ({
-      title: `${u.firstName || u.name || "User"}`,
-      category: u.subscriptionTier || "free",
-      progress: Math.floor(Math.random() * 40) + 60,
+const ACTIVITY_META = {
+  drill: { icon: PlayCircle, label: "completed a drill" },
+  watch: { icon: Clock3, label: "watched a drill" },
+  program: { icon: BookOpen, label: "enrolled in a program" },
+  session: { icon: Bell, label: "was active" },
+};
+
+const fallbackActivities = [
+  { icon: UserPlus, title: "New user joined", time: "5 mins ago" },
+  { icon: BadgeCheck, title: "Subscription renewed", time: "18 mins ago" },
+  { icon: PlayCircle, title: "Podcast published", time: "42 mins ago" },
+  { icon: BookOpen, title: "New drill uploaded", time: "1 hour ago" },
+  { icon: Bell, title: "System notification", time: "2 hours ago" },
+];
+
+const activities = (data?.recentActivity || []).length
+  ? (data?.recentActivity || []).map((a) => {
+      const meta = ACTIVITY_META[a.kind] || { icon: Bell, label: "was active" };
+      const name =
+        [a.firstName, a.lastName].filter(Boolean).join(" ") || a.email || "A user";
+      return {
+        icon: meta.icon,
+        title: `${name} ${meta.label}`,
+        time: timeAgo(a.updatedAt),
+      };
+    })
+  : fallbackActivities;
+
+const drillCompletion = (data?.topDrills || []).length
+  ? (data?.topDrills || []).map((d, i) => ({
+      title: d.title,
+      category: d.category || "Drill",
+      progress: d.progress,
+      completions: d.completions,
       color: COLORS[i % COLORS.length],
     }))
   : [
@@ -162,7 +208,7 @@ const drillCompletion = (data?.recentUsers || []).length > 0
       <Box
   sx={{
     display: "grid",
-    gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
+    gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
     gap: { xs: 1.5, md: 2 },
   }}
 >
@@ -310,7 +356,8 @@ const drillCompletion = (data?.recentUsers || []).length > 0
   tickLine={false}
 />
 
-<YAxis
+      <YAxis
+  yAxisId="users"
   tick={{
     fill: "#929292",
     fontSize: 12,
@@ -319,9 +366,45 @@ const drillCompletion = (data?.recentUsers || []).length > 0
   }}
   axisLine={{ stroke: "#2A2A2A" }}
   tickLine={false}
+  tickFormatter={(v) => v.toLocaleString()}
+  width={46}
+/>
+
+<YAxis
+  yAxisId="revenue"
+  orientation="right"
+  tick={{
+    fill: "#929292",
+    fontSize: 12,
+    fontFamily: "Poppins",
+    fontWeight: 500,
+  }}
+  axisLine={false}
+  tickLine={false}
+  tickFormatter={(v) => `$${v}`}
+  width={54}
+/>
+
+<Tooltip
+  cursor={{ stroke: "#2A2A2A" }}
+  contentStyle={{
+    bgcolor: "#1F1F1F",
+    border: "1px solid #2A2A2A",
+    borderRadius: "10px",
+    fontFamily: "Poppins",
+    fontWeight: 500,
+    fontSize: "12px",
+  }}
+  labelStyle={{ color: "#FFFFFF" }}
+  itemStyle={{ color: "#FFFFFF" }}
+  formatter={(value, name) => {
+    if (name === "revenue") return [money(value), "Revenue"];
+    return [value, "New Users"];
+  }}
 />
 
         <Area
+          yAxisId="users"
           type="monotone"
           dataKey="users"
           stroke="#FFFFFF"
@@ -330,6 +413,7 @@ const drillCompletion = (data?.recentUsers || []).length > 0
         />
 
         <Area
+          yAxisId="revenue"
           type="monotone"
           dataKey="revenue"
           stroke="#6155F5"

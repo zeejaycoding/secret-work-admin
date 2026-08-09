@@ -312,7 +312,7 @@ export default function LearnFromThePros() {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "repeat(2, minmax(0,1fr))", sm: "repeat(3, minmax(0,1fr))", md: "repeat(4, minmax(0,1fr))" },
+            gridTemplateColumns: { xs: "1fr", sm: "repeat(3, minmax(0,1fr))", md: "repeat(4, minmax(0,1fr))" },
             gap: { xs: 2, md: 3 },
           }}
         >
@@ -410,9 +410,11 @@ export default function LearnFromThePros() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
+                      gap: 1,
+                      flexWrap: "wrap",
                     }}
                   >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
                       <Star size={14} color="#929292" />
                       <Typography
                         sx={{
@@ -420,6 +422,9 @@ export default function LearnFromThePros() {
                           fontWeight: 500,
                           fontSize: "11px",
                           color: "#FFFFFF",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         Featured
@@ -437,9 +442,11 @@ export default function LearnFromThePros() {
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
+                      gap: 1,
+                      flexWrap: "wrap",
                     }}
                   >
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, minWidth: 0 }}>
                       <Home size={14} color="#929292" />
                       <Typography
                         sx={{
@@ -447,6 +454,9 @@ export default function LearnFromThePros() {
                           fontWeight: 500,
                           fontSize: "11px",
                           color: "#FFFFFF",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
                         Homepage banner

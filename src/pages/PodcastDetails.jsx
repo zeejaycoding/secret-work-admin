@@ -157,6 +157,7 @@ export default function PodcastDetails() {
           fontSize: "13px",
           color: "#929292",
           mb: 3,
+          wordBreak: "break-word",
         }}
       >
         {episode.title} • {episode.host} • {episode.duration}
@@ -169,6 +170,7 @@ export default function PodcastDetails() {
           alignItems: "center",
           gap: 1.5,
           mb: { xs: 3, md: 4 },
+          flexWrap: "wrap",
         }}
       >
         <Box

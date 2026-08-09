@@ -383,12 +383,29 @@ export default function ContentLibrary() {
     py: 1,
   },
 }}
-      renderValue={() => (
+      renderValue={(value) => (
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <Filter size={16} color="#FFFF" />
-          All Categories
+          {value === "all" ? "All Categories" : value}
         </Box>
       )}
+      MenuProps={{
+        PaperProps: {
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "10px",
+            "& .MuiMenuItem-root": {
+              fontFamily: "Inter",
+              fontWeight: 500,
+              fontSize: "14px",
+              color: "#FFFFFF",
+              "&:hover": { bgcolor: "#1F1F1F" },
+              "&.Mui-selected": { bgcolor: "#2A2A2A" },
+            },
+          },
+        },
+      }}
     >
       <MenuItem value="all">All Categories</MenuItem>
       <MenuItem value="Dribbling">Dribbling</MenuItem>
@@ -432,7 +449,32 @@ export default function ContentLibrary() {
   fontSize: "14px",
 },
       }}
-      renderValue={() => "All Statuses"}
+      renderValue={(value) =>
+        value === "all"
+          ? "All Statuses"
+          : value === "published"
+          ? "Published"
+          : value === "draft"
+          ? "Draft"
+          : "Archived"
+      }
+      MenuProps={{
+        PaperProps: {
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "10px",
+            "& .MuiMenuItem-root": {
+              fontFamily: "Inter",
+              fontWeight: 500,
+              fontSize: "14px",
+              color: "#FFFFFF",
+              "&:hover": { bgcolor: "#1F1F1F" },
+              "&.Mui-selected": { bgcolor: "#2A2A2A" },
+            },
+          },
+        },
+      }}
     >
       <MenuItem value="all">All Statuses</MenuItem>
       <MenuItem value="published">Published</MenuItem>

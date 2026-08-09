@@ -113,6 +113,10 @@ const SortableDrillRow = ({ id, index, item, onOpen }) => {
           fontSize: "13px",
           color: "#FFFFFF",
           flex: 1,
+          minWidth: 0,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
         }}
       >
         {drillName}
@@ -193,6 +197,11 @@ const ProgramCard = ({ program, onReorder, onOpen }) => {
             fontSize: "16px",
             color: "#FFFFFF",
             transition: "color .2s",
+            flex: 1,
+            minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
           }}
         >
           {program.name}

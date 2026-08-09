@@ -64,6 +64,8 @@ const SortableDrillRow = ({ id, index, item, onOpen, onRemove }) => {
         display: "flex",
         alignItems: "center",
         gap: 1.5,
+        flexWrap: { xs: "wrap", md: "nowrap" },
+        rowGap: 1,
       }}
     >
       <Box
@@ -101,6 +103,7 @@ const SortableDrillRow = ({ id, index, item, onOpen, onRemove }) => {
             borderRadius: "8px",
             objectFit: "cover",
             flexShrink: 0,
+            display: { xs: "none", md: "block" },
           }}
         />
       ) : (
@@ -111,11 +114,12 @@ const SortableDrillRow = ({ id, index, item, onOpen, onRemove }) => {
             borderRadius: "8px",
             bgcolor: "#2A2A2A",
             flexShrink: 0,
+            display: { xs: "none", md: "block" },
           }}
         />
       )}
 
-      <Box sx={{ flex: 1, minWidth: 0 }}>
+      <Box sx={{ flex: { xs: "1 1 auto", md: 1 }, minWidth: 0 }}>
         <Typography
           sx={{
             fontFamily: "Poppins",

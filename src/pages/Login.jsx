@@ -87,7 +87,8 @@ const styles = `
 
 .login-page {
   width: 100%;
-  height: 100vh;
+  min-height: 100vh;
+  height: auto;
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center top;
@@ -96,10 +97,13 @@ const styles = `
 
 .overlay {
   width: 100%;
-  height: 100%;
+  min-height: 100vh;
+  height: auto;
   display: flex;
   justify-content: center;
   align-items: center;
+  overflow-y: auto;
+  padding: 32px 0;
 
   background:
     linear-gradient(

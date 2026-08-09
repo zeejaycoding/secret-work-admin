@@ -302,7 +302,7 @@ export default function UsersPage() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
           gap: { xs: 1.5, md: 2 },
         }}
       >
@@ -937,7 +937,7 @@ export default function UsersPage() {
                       <ChevronRight size={18} color="#929292" />
                     </Box>
 
-                    <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 1.5, mb: 1.5 }}>
+                    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 1.5, mb: 1.5 }}>
                       <Box>
                         <Typography
                           sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "10px", color: "#6B6B6B", mb: 0.5 }}

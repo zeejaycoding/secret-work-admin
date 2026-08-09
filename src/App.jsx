@@ -12,8 +12,17 @@ import CoachDetails from "./pages/CoachDetails";
 import LearnFromThePros from "./pages/LearnFromThePros";
 import Users from "./pages/Users";
 import UserDetails from "./pages/UserDetails";
+import Subscriptions from "./pages/Subscriptions";
+import PlanDetail from "./pages/PlanDetail";
+import Analytics from "./pages/Analytics";
+import EditPlan from "./pages/EditPlan";
 import Podcast from "./pages/Podcast";
 import PodcastDetails from "./pages/PodcastDetails";
+import Notifications from "./pages/Notifications";
+import RolesPermissions from "./pages/RolesPermissions";
+import RoleDetail from "./pages/RoleDetail";
+import Settings from "./pages/Settings";
+import BrandEditor from "./pages/BrandEditor";
 
 function ProtectedRoute({ children }) {
   const token = localStorage.getItem("admin-token");
@@ -44,8 +53,17 @@ function App() {
           <Route path="/pros" element={<LearnFromThePros />} />
           <Route path="/users" element={<Users />} />
           <Route path="/user/:id" element={<UserDetails />} />
+          <Route path="/subscriptions" element={<Subscriptions />} />
+          <Route path="/plan/:key" element={<PlanDetail />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/plan/:key/edit" element={<EditPlan />} />
           <Route path="/podcasts" element={<Podcast />} />
           <Route path="/podcast/:id" element={<PodcastDetails />} />
+          <Route path="/notifications" element={<Notifications />} />
+          <Route path="/roles" element={<RolesPermissions />} />
+          <Route path="/role/:key" element={<RoleDetail />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/settings/brand-editor" element={<BrandEditor />} />
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

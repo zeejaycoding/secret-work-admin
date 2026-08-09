@@ -310,6 +310,7 @@ export default function DrillDetails() {
           sx={{
             display: "flex",
             gap: 1.5,
+            flexWrap: "wrap",
           }}
         >
           <Button
@@ -537,7 +538,7 @@ export default function DrillDetails() {
             </Typography>
           </Box>
 
-          <Box>
+          <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               sx={{
                 fontFamily: "Poppins",
@@ -545,6 +546,9 @@ export default function DrillDetails() {
                 fontSize: "16px",
                 color: "#FFFFFF",
                 mb: .5,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
               {drill.coach}
@@ -754,7 +758,7 @@ export default function DrillDetails() {
           <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#A0A0A0", mb: 3 }}>
             Are you sure you want to delete "{drill.title}"? This cannot be undone.
           </Typography>
-          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, flexWrap: "wrap" }}>
             <Button
               onClick={() => setConfirmOpen(false)}
               sx={{
@@ -1032,7 +1036,7 @@ export default function DrillDetails() {
             </Box>
           )}
 
-          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, flexWrap: "wrap" }}>
             <Button
               onClick={() => setEditOpen(false)}
               sx={{

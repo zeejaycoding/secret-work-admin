@@ -322,7 +322,7 @@ export default function UserDetails() {
             </Typography>
           </Box>
 
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1.5 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mt: 1.5, flexWrap: "wrap" }}>
             <Box
               sx={{
                 bgcolor: st.bg,
@@ -556,7 +556,7 @@ export default function UserDetails() {
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: "repeat(2, minmax(0,1fr))",
+                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, minmax(0,1fr))" },
                 gap: 2,
               }}
             >

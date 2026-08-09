@@ -374,7 +374,7 @@ export default function Podcast() {
       <Box
         sx={{
           display: "grid",
-          gridTemplateColumns: { xs: "repeat(2, 1fr)", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
+          gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)", md: "repeat(5, 1fr)" },
           gap: { xs: 1.5, md: 2 },
         }}
       >
@@ -1072,7 +1072,17 @@ export default function Podcast() {
           >
             <Video size={18} color="#929292" />
             <Typography
-              sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "13px", color: "#A0A0A0" }}
+              sx={{
+                fontFamily: "Inter",
+                fontWeight: 500,
+                fontSize: "13px",
+                color: "#A0A0A0",
+                flex: 1,
+                minWidth: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
             >
               {mediaFile ? mediaFile.name : "Click to upload video or audio"}
             </Typography>
@@ -1220,7 +1230,14 @@ export default function Podcast() {
               >
                 <CalendarClock size={18} color="#FF8D28" />
                 <Typography
-                  sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "13px", color: "#A0A0A0" }}
+                  sx={{
+                    fontFamily: "Inter",
+                    fontWeight: 500,
+                    fontSize: "13px",
+                    color: "#A0A0A0",
+                    flex: 1,
+                    minWidth: 0,
+                  }}
                 >
                   {scheduleDate
                     ? `Scheduled for ${formatDisplayDate(scheduleDate)} at ${scheduleTime}`

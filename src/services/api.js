@@ -66,6 +66,15 @@ export const deleteDrill = (id) => api.delete(`/admin/drills/${id}`);
 
 export const getUsers = (params) => api.get("/admin/users", { params });
 
+export const getSubscriptions = (params) =>
+  api.get("/admin/subscriptions", { params });
+
+export const getPlanDetail = (key) => api.get(`/admin/plans/${key}`);
+
+export const getAnalytics = () => api.get("/admin/analytics");
+
+export const updatePlan = (key, data) => api.put(`/admin/plans/${key}`, data);
+
 export const getUser = (id) => api.get(`/admin/users/${id}`);
 
 export const updateUser = (id, data) => api.put(`/admin/users/${id}`, data);
@@ -134,5 +143,31 @@ export const transcribePodcast = (id) =>
   api.post(`/admin/podcasts/${id}/transcribe`, null, {
     timeout: 180000,
   });
+
+export const getNotifications = () => api.get("/admin/notifications");
+
+export const getRoles = () => api.get("/admin/roles");
+
+export const getRole = (key) => api.get(`/admin/roles/${key}`);
+
+export const updateRole = (key, data) => api.put(`/admin/roles/${key}`, data);
+
+export const createRole = (data) => api.post("/admin/roles", data);
+
+export const removeRoleUser = (key, userId) =>
+  api.delete(`/admin/roles/${key}/users/${userId}`);
+
+export const createNotification = (data) =>
+  api.post("/admin/notifications", data);
+
+export const sendNotification = (id) =>
+  api.post(`/admin/notifications/${id}/send`);
+
+export const deleteNotification = (id) =>
+  api.delete(`/admin/notifications/${id}`);
+
+export const getSettings = () => api.get("/admin/settings");
+
+export const updateSettings = (data) => api.put("/admin/settings", data);
 
 export default api;
