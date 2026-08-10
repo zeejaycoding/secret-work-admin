@@ -61,7 +61,8 @@ const sectionSubSx = {
 
 const FONTS = ["Poppins", "Inter", "Roboto", "Montserrat", "Lato", "Playfair Display"];
 
-function UploadBox({ label, sub }) {
+function UploadBox({ label, sub, onFileSelected, previewUrl }) {
+  const inputId = `upload-${label.replace(/\s+/g, "-").toLowerCase()}`;
   return (
     <Box
       sx={{
@@ -114,25 +115,43 @@ function UploadBox({ label, sub }) {
         {sub}
       </Typography>
 
-      <Button
-        variant="outlined"
-        sx={{
-          borderColor: "#2A2A2A",
-          borderRadius: "10px",
-          color: "#D6D6D6",
-          textTransform: "none",
-          fontFamily: "Poppins",
-          fontWeight: 500,
-          fontSize: "12px",
-          mt: 1,
-          "&:hover": {
-            borderColor: "#3A3A3A",
-            bgcolor: "#2A2A2A",
-          },
+      <input
+        id={inputId}
+        type="file"
+        accept="image/*"
+        style={{ display: "none" }}
+        onChange={(e) => {
+          const f = e.target.files && e.target.files[0];
+          if (f && onFileSelected) onFileSelected(f);
         }}
-      >
-        Upload
-      </Button>
+      />
+
+      <label htmlFor={inputId}>
+        <Button
+          component="span"
+          variant="outlined"
+          sx={{
+            borderColor: "#2A2A2A",
+            borderRadius: "10px",
+            color: "#D6D6D6",
+            textTransform: "none",
+            fontFamily: "Poppins",
+            fontWeight: 500,
+            fontSize: "12px",
+            mt: 1,
+            "&:hover": {
+              borderColor: "#3A3A3A",
+              bgcolor: "#2A2A2A",
+            },
+          }}
+        >
+          Upload
+        </Button>
+      </label>
+
+      {previewUrl ? (
+        <Box component="img" src={previewUrl} sx={{ width: 72, height: 72, mt: 1, borderRadius: 2 }} />
+      ) : null}
     </Box>
   );
 }
@@ -149,6 +168,9 @@ export default function BrandEditorPage() {
   const [accentColor, setAccentColor] = useState("#FF0015");
   const [displayFont, setDisplayFont] = useState("Poppins");
   const [bodyFont, setBodyFont] = useState("Inter");
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [iconUrl, setIconUrl] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -163,6 +185,8 @@ export default function BrandEditorPage() {
         if (branding.accentColor) setAccentColor(branding.accentColor);
         if (branding.displayFont) setDisplayFont(branding.displayFont);
         if (branding.bodyFont) setBodyFont(branding.bodyFont);
+        if (branding.logoUrl) setLogoUrl(branding.logoUrl);
+        if (branding.iconUrl) setIconUrl(branding.iconUrl);
       })
       .catch((error) => {
         console.error("Failed to load branding:", error);
@@ -182,6 +206,8 @@ export default function BrandEditorPage() {
           accentColor,
           displayFont,
           bodyFont,
+          logoUrl,
+          iconUrl,
         },
       });
       setSavedMsg("Brand settings saved");
@@ -190,6 +216,25 @@ export default function BrandEditorPage() {
       console.error("Failed to save branding:", error);
       setSavedMsg("Failed to save brand settings");
       setSaved(true);
+    }
+  };
+
+  const handleFileUpload = async (file, type) => {
+    setUploading(true);
+    try {
+      const { uploadBrandAsset } = await import("../services/api");
+      const res = await uploadBrandAsset(file, type);
+      const url = res.data?.url || (res.data?.branding && (res.data.branding.logoUrl || res.data.branding.iconUrl));
+      if (type === "logo") setLogoUrl(url);
+      if (type === "icon") setIconUrl(url);
+      setSavedMsg("Uploaded");
+      setSaved(true);
+    } catch (err) {
+      console.error("Upload failed:", err);
+      setSavedMsg("Upload failed");
+      setSaved(true);
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -409,8 +454,8 @@ export default function BrandEditorPage() {
             </Typography>
 
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-              <UploadBox label="Upload logo" sub="PNG, JPG or SVG · 512×512" />
-              <UploadBox label="Upload app icon" sub="PNG · 1024×1024" />
+              <UploadBox label="Upload logo" sub="PNG, JPG or SVG · 512×512" onFileSelected={(f) => handleFileUpload(f, "logo")} previewUrl={logoUrl} />
+              <UploadBox label="Upload app icon" sub="PNG · 1024×1024" onFileSelected={(f) => handleFileUpload(f, "icon")} previewUrl={iconUrl} />
             </Box>
           </Box>
 

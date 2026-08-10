@@ -39,6 +39,7 @@ import {
   getSubscriptions,
   getNotifications,
   createNotification,
+  sendNotification,
   deleteNotification,
 } from "../services/api";
 
@@ -222,8 +223,11 @@ export default function NotificationsPage() {
       status,
       ...(scheduledAt ? { scheduledAt } : {}),
     };
+    // include client timezone offset for server-side parsing of naive datetimes
+    const tzOffset = String(new Date().getTimezoneOffset());
+    const config = { headers: { "X-Client-Timezone-Offset": tzOffset } };
     try {
-      const res = await createNotification(payload);
+      const res = await createNotification(payload, config);
       const entry = normalizeNotification(res.data.notification);
       persistHistory([entry, ...history]);
       return { ok: true };
@@ -1006,6 +1010,25 @@ export default function NotificationsPage() {
                         >
                           <Eye size={16} />
                         </IconButton>
+                        {h.status === "Draft" && !String(h.id).startsWith("local-") && (
+                          <IconButton
+                            size="small"
+                            onClick={async () => {
+                              try {
+                                const res = await sendNotification(h.id);
+                                const updated = normalizeNotification(res.data.notification);
+                                const next = history.map((x) => (x.id === h.id ? updated : x));
+                                persistHistory(next);
+                                showSnackbar("Draft sent", "success");
+                              } catch (err) {
+                                showSnackbar("Failed to send draft", "error");
+                              }
+                            }}
+                            sx={{ color: "#929292", "&:hover": { color: "#FFFFFF" } }}
+                          >
+                            <Send size={16} />
+                          </IconButton>
+                        )}
                         <IconButton
                           size="small"
                           onClick={() => removeHistory(h.id)}

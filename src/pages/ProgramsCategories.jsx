@@ -9,6 +9,8 @@ import {
   Dialog,
   DialogContent,
   IconButton,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 
 import {
@@ -153,6 +155,18 @@ const ProgramCard = ({ program, onReorder, onOpen }) => {
     onReorder(program._id, arrayMove(progDrills, oldIndex, newIndex));
   };
 
+  const renderDuration = () => {
+    const d = program.duration;
+    if (d == null) return "";
+    if (typeof d === "number") return `${d} weeks`;
+    if (typeof d === "string") {
+      const m = d.match(/\d+/);
+      if (m) return `${m[0]} weeks`;
+      return d;
+    }
+    return "";
+  };
+
   return (
     <Box
       sx={{
@@ -227,7 +241,7 @@ const ProgramCard = ({ program, onReorder, onOpen }) => {
         </Box>
         <Box sx={{ bgcolor: "#1F1F1F", borderRadius: "8px", px: 2, py: 0.6 }}>
           <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "12px", color: "#FFFFFF" }}>
-            {program.duration} weeks
+            {renderDuration()}
           </Typography>
         </Box>
       </Box>
@@ -290,8 +304,9 @@ export default function ProgramsCategories() {
   const [createName, setCreateName] = useState("");
   const [createLevel, setCreateLevel] = useState("Beginner");
   const [createCat, setCreateCat] = useState("");
-  const [createDuration, setCreateDuration] = useState("4 weeks");
+  const [createDuration, setCreateDuration] = useState("4");
   const [loading, setLoading] = useState(true);
+  const [notify, setNotify] = useState({ open: false, msg: "" });
 
   useEffect(() => {
     Promise.all([
@@ -302,14 +317,21 @@ export default function ProgramsCategories() {
         setCategories(catRes.data.categories || []);
         setPrograms(progRes.data.programs || []);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to load categories/programs:", err?.message || err);
+        setCategories([]);
+        setPrograms([]);
+      })
       .finally(() => setLoading(false));
   }, []);
 
   const fetchPrograms = (q, cat) => {
     getPrograms({ search: q, category: cat })
       .then((res) => setPrograms(res.data.programs || []))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to fetch programs:", err?.message || err);
+        setPrograms([]);
+      });
   };
 
   const handleAddCategory = () => {
@@ -321,7 +343,9 @@ export default function ProgramsCategories() {
         return getCategories();
       })
       .then((res) => setCategories(res.data.categories || []))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to add category:", err?.message || err);
+      });
   };
 
   const handleCreateProgram = () => {
@@ -331,24 +355,31 @@ export default function ProgramsCategories() {
         setCreateName("");
         setCreateLevel("Beginner");
         setCreateCat("");
-        setCreateDuration("4 weeks");
+        setCreateDuration("4");
         setCreateModalOpen(false);
         return getPrograms({ search, category: filterCategory });
       })
       .then((res) => setPrograms(res.data.programs || []))
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to create program:", err?.message || err);
+      });
   };
 
   const handleReorder = (programId, reordered) => {
-    setPrograms((prev) =>
-      prev.map((p) => {
+    const prev = programs;
+    setPrograms((prevList) =>
+      prevList.map((p) => {
         if (p._id !== programId) return p;
         const withOrder = reordered.map((d, i) => ({ ...d, order: i + 1 }));
         const payload = withOrder.map((d) => ({
           drill: d.drill?._id || d.drill,
           order: d.order,
         }));
-        updateProgram(programId, { drills: payload }).catch(() => {});
+        updateProgram(programId, { drills: payload }).catch((err) => {
+          console.error("Failed to update program drills:", err?.message || err);
+          setPrograms(prev);
+          setNotify({ open: true, msg: "Failed to save program order" });
+        });
         return { ...p, drills: withOrder };
       })
     );
@@ -915,6 +946,16 @@ export default function ProgramsCategories() {
         </DialogContent>
       </Dialog>
 
+      <Snackbar
+        open={notify.open}
+        autoHideDuration={4000}
+        onClose={() => setNotify({ open: false, msg: "" })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert onClose={() => setNotify({ open: false, msg: "" })} severity="error" variant="filled">
+          {notify.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

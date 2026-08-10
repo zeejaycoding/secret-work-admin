@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -38,6 +38,7 @@ import {
 } from "recharts";
 
 import { getSubscriptions } from "../services/api";
+import usePolling from "../hooks/usePolling";
 
 const csvCell = (value) => {
   const str = value == null ? "" : String(value);
@@ -102,21 +103,23 @@ export default function SubscriptionsPage() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState("all");
   const [search, setSearch] = useState("");
+  const hasLoaded = useRef(false);
 
   const fetchData = (t, q) => {
     const params = {};
     if (t && t !== "all") params.tab = t;
     if (q) params.search = q;
-    setLoading(true);
+    if (!hasLoaded.current) setLoading(true);
     getSubscriptions(params)
       .then((res) => setData(res.data))
       .catch(() => setData(null))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        hasLoaded.current = true;
+        setLoading(false);
+      });
   };
 
-  useEffect(() => {
-    fetchData(tab, search);
-  }, []);
+  usePolling(() => fetchData(tab, search), 30000);
 
   const changeTab = (t) => {
     setTab(t);
@@ -157,7 +160,26 @@ export default function SubscriptionsPage() {
       ]
     : [];
 
-  const chartData = data?.dailyRevenue || [];
+  const formatDay = (dateStr) => {
+    if (!dateStr) return "";
+    const parts = String(dateStr).split("-");
+    if (parts.length === 3) {
+      const d = new Date(
+        Number(parts[0]),
+        Number(parts[1]) - 1,
+        Number(parts[2])
+      );
+      if (!Number.isNaN(d.getTime())) {
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      }
+    }
+    return String(dateStr);
+  };
+
+  const chartData = (data?.dailyRevenue || []).map((d) => ({
+    ...d,
+    label: formatDay(d.date),
+  }));
 
   const transactions = data?.transactions || [];
 
@@ -356,77 +378,72 @@ export default function SubscriptionsPage() {
           <Box sx={{ width: "100%", height: { xs: 240, md: 300 } }}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
-                <defs>
-                  <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#E50914" stopOpacity={0.7} />
-                    <stop offset="100%" stopColor="#E50914" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
+                  <defs>
+                    <linearGradient
+                      id="revenueGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
+                      <stop offset="0%" stopColor="#E50914" stopOpacity={0.7} />
+                      <stop offset="100%" stopColor="#E50914" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
 
-                <CartesianGrid
-                  vertical={false}
-                  stroke="#2A2A2A"
-                  strokeDasharray="0"
-                />
-                <XAxis
-                  dataKey="date"
-                  tickFormatter={(value) => {
-                    const d = new Date(value);
-                    if (Number.isNaN(d.getTime())) return value;
-                    return `${d.getMonth() + 1}/${d.getDate()}`;
-                  }}
-                  tick={{
-                    fill: "#929292",
-                    fontSize: 11,
-                    fontFamily: "Poppins",
-                    fontWeight: 500,
-                  }}
-                  axisLine={{ stroke: "#2A2A2A" }}
-                  tickLine={false}
-                  interval={1}
-                />
-                <YAxis
-                  tick={{
-                    fill: "#929292",
-                    fontSize: 11,
-                    fontFamily: "Poppins",
-                    fontWeight: 500,
-                  }}
-                  axisLine={false}
-                  tickLine={false}
-                  tickFormatter={(v) => `$${v}`}
-                />
-                <Tooltip
-                  cursor={{ stroke: "#2A2A2A" }}
-                  contentStyle={{
-                    bgcolor: "#1F1F1F",
-                    border: "1px solid #2A2A2A",
-                    borderRadius: "10px",
-                    fontFamily: "Poppins",
-                    fontWeight: 500,
-                    fontSize: "12px",
-                  }}
-                  labelStyle={{ color: "#FFFFFF" }}
-                  itemStyle={{ color: "#FFFFFF" }}
-                  labelFormatter={(value) => {
-                    const d = new Date(value);
-                    if (Number.isNaN(d.getTime())) return value;
-                    return d.toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    });
-                  }}
-                  formatter={(v) => [`$${Number(v).toFixed(2)}`, "Revenue"]}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#E50914"
-                  strokeWidth={3}
-                  fill="url(#revenueGradient)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+                  <CartesianGrid
+                    vertical={false}
+                    stroke="#2A2A2A"
+                    strokeDasharray="0"
+                  />
+                  <XAxis
+                    dataKey="label"
+                    interval={0}
+                    tickMargin={10}
+                    padding={{ left: 16, right: 36 }}
+                    tick={{
+                      fill: "#929292",
+                      fontSize: 11,
+                      fontFamily: "Poppins",
+                      fontWeight: 500,
+                    }}
+                    axisLine={{ stroke: "#2A2A2A" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    tick={{
+                      fill: "#929292",
+                      fontSize: 11,
+                      fontFamily: "Poppins",
+                      fontWeight: 500,
+                    }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `$${v}`}
+                  />
+                  <Tooltip
+                    cursor={{ stroke: "#2A2A2A" }}
+                    contentStyle={{
+                      backgroundColor: "#1F1F1F",
+                      border: "1px solid #2A2A2A",
+                      borderRadius: "10px",
+                      fontFamily: "Poppins",
+                      fontWeight: 500,
+                      fontSize: "12px",
+                    }}
+                    labelStyle={{ color: "#FFFFFF" }}
+                    itemStyle={{ color: "#FFFFFF" }}
+                    formatter={(v) => [`$${Number(v).toFixed(2)}`, "Revenue"]}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#E50914"
+                    strokeWidth={3}
+                    fill="url(#revenueGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
           </Box>
         </Box>
 
@@ -461,14 +478,7 @@ export default function SubscriptionsPage() {
                 : p.plan === "Annual Pro"
                 ? "Annually"
                 : p.plan;
-            const price =
-              p.plan === "Free"
-                ? "$0"
-                : p.plan === "Monthly Pro"
-                ? "$9.50/mo"
-                : p.plan === "Annual Pro"
-                ? "$79/yr"
-                : "";
+            const price = p.priceLabel || p.price;
 
             return (
               <Box

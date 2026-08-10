@@ -30,6 +30,13 @@ api.interceptors.response.use(
 export const adminLogin = (email, password) =>
   api.post("/admin/login", { email, password });
 
+export const adminLogout = () => {
+  localStorage.removeItem("admin-token");
+  try {
+    window.location.href = "/";
+  } catch {}
+};
+
 export const adminForgotPassword = (email) =>
   api.post("/admin/forgot-password", { email });
 
@@ -46,10 +53,7 @@ export const getDrills = (params) => api.get("/admin/drills", { params });
 export const getDrill = (id) => api.get(`/admin/drills/${id}`);
 
 export const createDrill = (data) =>
-  api.post("/admin/drills", data, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: 180000,
-  });
+  api.post("/admin/drills", data, { timeout: 180000 });
 
 export const updateDrill = (id, data) =>
   api.put(`/admin/drills/${id}`, data, {
@@ -57,12 +61,15 @@ export const updateDrill = (id, data) =>
   });
 
 export const updateDrillFiles = (id, formData) =>
-  api.put(`/admin/drills/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: 180000,
-  });
+  api.put(`/admin/drills/${id}`, formData, { timeout: 180000 });
 
 export const deleteDrill = (id) => api.delete(`/admin/drills/${id}`);
+
+export const getCoach = (name) =>
+  api.get(`/admin/coaches/${encodeURIComponent(name)}`);
+
+export const deleteCoach = (name) =>
+  api.delete(`/admin/coaches/${encodeURIComponent(name)}`);
 
 export const getUsers = (params) => api.get("/admin/users", { params });
 
@@ -106,18 +113,12 @@ export const getPros = (params) => api.get("/admin/pros", { params });
 export const getPro = (id) => api.get(`/admin/pros/${id}`);
 
 export const createPro = (data) =>
-  api.post("/admin/pros", data, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: 180000,
-  });
+  api.post("/admin/pros", data, { timeout: 180000 });
 
 export const updatePro = (id, data) => api.put(`/admin/pros/${id}`, data);
 
 export const updateProFiles = (id, formData) =>
-  api.put(`/admin/pros/${id}`, formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: 180000,
-  });
+  api.put(`/admin/pros/${id}`, formData, { timeout: 180000 });
 
 export const deletePro = (id) => api.delete(`/admin/pros/${id}`);
 
@@ -126,23 +127,19 @@ export const getPodcasts = () => api.get("/admin/podcasts");
 export const getPodcast = (id) => api.get(`/admin/podcasts/${id}`);
 
 export const createPodcast = (data) =>
-  api.post("/admin/podcasts", data, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: 180000,
-  });
+  api.post("/admin/podcasts", data, { timeout: 180000 });
 
 export const updatePodcast = (id, data) =>
-  api.put(`/admin/podcasts/${id}`, data, {
-    headers: { "Content-Type": "multipart/form-data" },
-    timeout: 180000,
-  });
+  api.put(`/admin/podcasts/${id}`, data, { timeout: 180000 });
 
 export const deletePodcast = (id) => api.delete(`/admin/podcasts/${id}`);
 
 export const transcribePodcast = (id) =>
-  api.post(`/admin/podcasts/${id}/transcribe`, null, {
-    timeout: 180000,
-  });
+  api.post(
+    `/admin/podcasts/${id}/transcribe`,
+    {},
+    { timeout: 180000 }
+  );
 
 export const getNotifications = () => api.get("/admin/notifications");
 
@@ -157,8 +154,8 @@ export const createRole = (data) => api.post("/admin/roles", data);
 export const removeRoleUser = (key, userId) =>
   api.delete(`/admin/roles/${key}/users/${userId}`);
 
-export const createNotification = (data) =>
-  api.post("/admin/notifications", data);
+export const createNotification = (data, config) =>
+  api.post("/admin/notifications", data, config);
 
 export const sendNotification = (id) =>
   api.post(`/admin/notifications/${id}/send`);
@@ -169,5 +166,12 @@ export const deleteNotification = (id) =>
 export const getSettings = () => api.get("/admin/settings");
 
 export const updateSettings = (data) => api.put("/admin/settings", data);
+
+export const uploadBrandAsset = (file, type) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("type", type);
+  return api.post("/admin/settings/upload", fd, { timeout: 120000 });
+};
 
 export default api;

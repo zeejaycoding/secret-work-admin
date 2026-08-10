@@ -101,7 +101,18 @@ export default function AnalyticsPage() {
       ]
     : [];
 
-  const dailyActive = data?.dailyActive || [];
+  const formatDay = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(
+      String(dateStr).includes("T") ? dateStr : String(dateStr) + "T00:00:00"
+    );
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
+  const dailyActive = (data?.dailyActive || []).slice(-14).map((d) => ({
+    ...d,
+    label: formatDay(d.date),
+  }));
   const mostWatchedDrills = data?.mostWatchedDrills || [];
   const maxViews = mostWatchedDrills.reduce(
     (max, d) => Math.max(max, d.views || 0),
@@ -284,62 +295,66 @@ export default function AnalyticsPage() {
           Daily Active Users
         </Typography>
 
-        <Box sx={{ width: "100%", height: { xs: 240, md: 320 } }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={dailyActive}>
-              <defs>
-                <linearGradient id="dauGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#E50914" stopOpacity={0.7} />
-                  <stop offset="100%" stopColor="#E50914" stopOpacity={0} />
-                </linearGradient>
-              </defs>
+        <Box sx={{ width: "100%", height: { xs: 240, md: 320 }, overflowX: "auto", overflowY: "hidden" }}>
+          <Box sx={{ minWidth: 840, width: "100%", height: "100%" }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={dailyActive}>
+                <defs>
+                  <linearGradient id="dauGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#E50914" stopOpacity={0.7} />
+                    <stop offset="100%" stopColor="#E50914" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
 
-              <CartesianGrid vertical={false} stroke="#2A2A2A" strokeDasharray="0" />
-              <XAxis
-                dataKey="label"
-                tick={{
-                  fill: "#929292",
-                  fontSize: 11,
-                  fontFamily: "Poppins",
-                  fontWeight: 500,
-                }}
-                axisLine={{ stroke: "#2A2A2A" }}
-                tickLine={false}
-                interval={1}
-              />
-              <YAxis
-                tick={{
-                  fill: "#929292",
-                  fontSize: 11,
-                  fontFamily: "Poppins",
-                  fontWeight: 500,
-                }}
-                axisLine={false}
-                tickLine={false}
-              />
-              <Tooltip
-                cursor={{ stroke: "#2A2A2A" }}
-                contentStyle={{
-                  bgcolor: "#1F1F1F",
-                  border: "1px solid #2A2A2A",
-                  borderRadius: "10px",
-                  fontFamily: "Poppins",
-                  fontWeight: 500,
-                  fontSize: "12px",
-                }}
-                labelStyle={{ color: "#FFFFFF" }}
-                itemStyle={{ color: "#FFFFFF" }}
-                formatter={(v) => [`${v} users`, "Active"]}
-              />
-              <Area
-                type="monotone"
-                dataKey="users"
-                stroke="#E50914"
-                strokeWidth={3}
-                fill="url(#dauGradient)"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+                <CartesianGrid vertical={false} stroke="#2A2A2A" strokeDasharray="0" />
+                <XAxis
+                  dataKey="label"
+                  interval={0}
+                  tickMargin={10}
+                  padding={{ left: 16, right: 36 }}
+                  tick={{
+                    fill: "#929292",
+                    fontSize: 11,
+                    fontFamily: "Poppins",
+                    fontWeight: 500,
+                  }}
+                  axisLine={{ stroke: "#2A2A2A" }}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{
+                    fill: "#929292",
+                    fontSize: 11,
+                    fontFamily: "Poppins",
+                    fontWeight: 500,
+                  }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <Tooltip
+                  cursor={{ stroke: "#2A2A2A" }}
+                  contentStyle={{
+                    backgroundColor: "#1F1F1F",
+                    border: "1px solid #2A2A2A",
+                    borderRadius: "10px",
+                    fontFamily: "Poppins",
+                    fontWeight: 500,
+                    fontSize: "12px",
+                  }}
+                  labelStyle={{ color: "#FFFFFF" }}
+                  itemStyle={{ color: "#FFFFFF" }}
+                  formatter={(v) => [`${v} users`, "Active"]}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="users"
+                  stroke="#E50914"
+                  strokeWidth={3}
+                  fill="url(#dauGradient)"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </Box>
         </Box>
       </Box>
 
@@ -420,7 +435,7 @@ export default function AnalyticsPage() {
                 <Tooltip
                   cursor={{ fill: "#1A1A1A" }}
                   contentStyle={{
-                    bgcolor: "#1F1F1F",
+                    backgroundColor: "#1F1F1F",
                     border: "1px solid #2A2A2A",
                     borderRadius: "10px",
                     fontFamily: "Poppins",

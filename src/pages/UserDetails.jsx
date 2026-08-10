@@ -100,11 +100,13 @@ export default function UserDetails() {
         setDrillHistory(res.data.drillHistory || []);
         setEnrolledPrograms(res.data.enrolledPrograms || []);
       })
-      .catch(() => {
+      .catch((err) => {
         if (!mounted) return;
-        setUser({ ...MOCK_USER, _id: id });
-        setDrillHistory(MOCK_HISTORY);
-        setEnrolledPrograms(MOCK_PROGRAMS);
+        console.error("Get user failed:", err?.message || err);
+        // Do not fabricate demo data. Show not-found/empty state instead.
+        setUser(null);
+        setDrillHistory([]);
+        setEnrolledPrograms([]);
       })
       .finally(() => {
         if (mounted) setLoading(false);

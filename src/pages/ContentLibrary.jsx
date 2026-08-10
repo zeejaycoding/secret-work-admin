@@ -25,7 +25,7 @@ import {
   Video,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getDrills, createDrill } from "../services/api";
+import api, { getDrills, createDrill } from "../services/api";
 
 function formatViews(n) {
   if (!n) return "0 views";
@@ -176,15 +176,24 @@ export default function ContentLibrary() {
             uniqueDrills.push(d);
           }
         });
-        setDrills(uniqueDrills.map((d) => ({
-          id: d._id,
-          title: d.title,
-          coach: d.coach,
-          category: d.category,
-          views: formatViews(d.views),
-          image: d.imageUrl || "",
-          videoUrl: d.videoUrl || "",
-        })));
+        const host = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+        setDrills(
+          uniqueDrills.map((d) => {
+            const img = d.imageUrl || "";
+            const vid = d.videoUrl || "";
+            const absImg = img.startsWith("/uploads/") ? host + img : img;
+            const absVid = vid.startsWith("/uploads/") ? host + vid : vid;
+            return {
+              id: d._id,
+              title: d.title,
+              coach: d.coach,
+              category: d.category,
+              views: formatViews(d.views),
+              image: absImg || "",
+              videoUrl: absVid || "",
+            };
+          })
+        );
       })
       .catch(() => {
         setDrills([]);

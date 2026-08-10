@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, IconButton, Divider, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Typography, IconButton, Divider, useMediaQuery, useTheme, Button } from "@mui/material";
 import { useNavigate, useLocation } from "react-router-dom";
 import PodcastsIcon from "@mui/icons-material/Podcasts";
+import ExitToAppIcon from "@mui/icons-material/ExitToApp";
+import { adminLogout } from "../services/api";
 import {
   PanelLeftClose,
   PanelLeftOpen,
@@ -422,6 +424,7 @@ const systemItems = [
   );
 })}
 
+
 <Divider
   sx={{
     borderColor: "#161616",
@@ -487,10 +490,39 @@ const systemItems = [
           {item.title}
         </Typography>
       )}
+
+      
     </Box>
+
+
   );
 })}
+<Box sx={{ py: 2 }}>
+  <Button
+    onClick={() => {
+      try {
+        adminLogout();
+      } catch {
+        localStorage.removeItem("admin-token");
+        window.location.href = "/";
+      }
+    }}
+    sx={{
+      width: "100%",
+      justifyContent: "flex-start",
+      textTransform: "none",
+      color: "#FFFFFF",
+      borderRadius: "10px",
+      px: 1,
+    }}
+    startIcon={<ExitToAppIcon style={{ color: "#FFFFFF" }} />}
+  >
+    Logout
+  </Button>
 </Box>
+
+</Box>
+
     </Box>
   </>
   );

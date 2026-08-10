@@ -51,11 +51,16 @@ export default function LearnFromThePros() {
   }, []);
 
   const handleToggle = (pro, field, value) => {
-    setPros((prev) =>
-      prev.map((p) =>
-        p._id === pro._id ? { ...p, [field]: value } : p
-      )
-    );
+    setPros((prev) => {
+      // When setting homepageBanner to true, clear it on all other pros locally
+      if (field === "homepageBanner" && value) {
+        return prev.map((p) =>
+          p._id === pro._id ? { ...p, [field]: true } : { ...p, [field]: false }
+        );
+      }
+      // Otherwise just update the single pro optimistically
+      return prev.map((p) => (p._id === pro._id ? { ...p, [field]: value } : p));
+    });
     updatePro(pro._id, { [field]: value }).catch(() => fetchPros());
   };
 

@@ -115,13 +115,14 @@ export default function SettingsPage() {
 
   // Payments
   const [currency, setCurrency] = useState("USD");
+  const [integrationsState, setIntegrationsState] = useState({});
 
   useEffect(() => {
     let mounted = true;
     getSettings()
       .then((res) => {
         if (!mounted) return;
-        const { branding, notifications } = res.data;
+        const { branding, notifications, integrations, storage, payments } = res.data;
         if (branding) {
           if (branding.appName) setAppName(branding.appName);
           if (branding.tagline != null) setTagline(branding.tagline);
@@ -132,6 +133,8 @@ export default function SettingsPage() {
             ...notifications,
           }));
         }
+        if (payments && payments.currency) setCurrency(payments.currency);
+        if (integrations) setIntegrationsState(integrations);
       })
       .catch((error) => {
         console.error("Failed to load settings:", error);
@@ -491,24 +494,6 @@ export default function SettingsPage() {
               </Box>
             </Box>
 
-            <Box>
-              <Typography sx={inputLabelSx}>Default currency</Typography>
-              <TextField
-                fullWidth
-                select
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                sx={fieldSx}
-                SelectProps={{
-                  native: true,
-                  style: { color: "#FFFFFF", fontFamily: "Inter", fontWeight: 500 },
-                }}
-              >
-                <option value="USD">USD</option>
-                <option value="EUR">EUR</option>
-                <option value="GBP">GBP</option>
-              </TextField>
-            </Box>
           </Box>
         </Box>
       )}
@@ -523,10 +508,11 @@ export default function SettingsPage() {
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
             {[
-              { name: "SendGrid", desc: "Transactional and campaign emails", connected: true },
-              { name: "Expo Push", desc: "Push notifications", connected: true },
-              { name: "Clerk", desc: "Authentication", connected: true },
-              { name: "Cloudinary", desc: "Media storage and delivery", connected: true },
+              { name: "SendGrid", desc: "Transactional and campaign emails", key: "sendgrid" },
+              { name: "Expo Push", desc: "Push notifications", key: "expo" },
+              { name: "Clerk", desc: "Authentication", key: "clerk" },
+              { name: "Cloudinary", desc: "Media storage and delivery", key: "cloudinary" },
+              { name: "OpenAI", desc: "Podcast transcription", key: "openai" },
             ].map((item, i) => (
               <Box key={item.name}>
                 <Box
@@ -562,23 +548,99 @@ export default function SettingsPage() {
                   </Box>
 
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <CheckCircle2 size={16} color="#4CAF50" />
-                    <Typography
-                      sx={{
-                        fontFamily: "Poppins",
-                        fontWeight: 500,
-                        fontSize: "12px",
-                        color: "#4CAF50",
-                      }}
-                    >
-                      Connected
-                    </Typography>
+                    {integrationsState[item.key] ? (
+                      <>
+                        <CheckCircle2 size={16} color="#4CAF50" />
+                        <Typography
+                          sx={{
+                            fontFamily: "Poppins",
+                            fontWeight: 500,
+                            fontSize: "12px",
+                            color: "#4CAF50",
+                          }}
+                        >
+                          Connected
+                        </Typography>
+                      </>
+                    ) : (
+                      <>
+                        <Typography
+                          sx={{
+                            fontFamily: "Poppins",
+                            fontWeight: 500,
+                            fontSize: "12px",
+                            color: "#929292",
+                          }}
+                        >
+                          Disconnected
+                        </Typography>
+                      </>
+                    )}
                   </Box>
                 </Box>
 
-                {i < 3 && <Divider sx={{ borderColor: "#1E1E1E" }} />}
+                {i < 4 && <Divider sx={{ borderColor: "#1E1E1E" }} />}
               </Box>
             ))}
+          </Box>
+
+          <Divider sx={{ borderColor: "#1E1E1E", my: 3 }} />
+
+          {/* Transcription */}
+          <Typography sx={sectionTitleSx}>Podcast transcription</Typography>
+          <Typography sx={sectionSubSx}>
+            Transcripts are generated with OpenAI's whisper-1 model, which
+            returns per-segment timestamps.
+          </Typography>
+
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              bgcolor: "#1F1F1F",
+              border: "1px solid #2A2A2A",
+              borderRadius: "10px",
+              p: 2.5,
+            }}
+          >
+            <Box>
+              <Typography
+                sx={{
+                  fontFamily: "Poppins",
+                  fontWeight: 500,
+                  fontSize: "14px",
+                  color: "#FFFFFF",
+                }}
+              >
+                Transcription model
+              </Typography>
+              <Typography
+                sx={{
+                  fontFamily: "Inter",
+                  fontWeight: 500,
+                  fontSize: "11.5px",
+                  color: "#6B6B6B",
+                  mt: 0.3,
+                }}
+              >
+                Runs in the background; the episode page polls until done.
+              </Typography>
+            </Box>
+
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <CheckCircle2 size={16} color="#4CAF50" />
+              <Typography
+                sx={{
+                  fontFamily: "Poppins",
+                  fontWeight: 500,
+                  fontSize: "12px",
+                  color: "#4CAF50",
+                }}
+              >
+                whisper-1
+              </Typography>
+            </Box>
           </Box>
         </Box>
       )}

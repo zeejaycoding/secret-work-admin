@@ -19,6 +19,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
+  Tooltip,
 } from "recharts";
 
 function formatViews(n) {
@@ -173,10 +174,25 @@ export default function DrillDetails() {
     [publishedDate, "Date Published"],
   ];
 
+  const formatDay = (dateStr) => {
+    if (!dateStr) return "";
+    const d = new Date(
+      String(dateStr).includes("T") ? dateStr : String(dateStr) + "T00:00:00"
+    );
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  };
+
   const chartData =
     drill.viewsHistory && drill.viewsHistory.length
-      ? drill.viewsHistory.map((v, i) => ({ day: `D${i + 1}`, views: v.count || 0 }))
-      : Array.from({ length: 14 }, (_, i) => ({ day: `D${i + 1}`, views: 0 }));
+      ? drill.viewsHistory.map((v) => ({
+          day: formatDay(v.date),
+          views: v.count || 0,
+        }))
+      : Array.from({ length: 14 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - (13 - i));
+          return { day: formatDay(d), views: 0 };
+        });
 
   return (
     <Box>
@@ -366,7 +382,7 @@ export default function DrillDetails() {
   sx={{
     mt: { xs: 3, md: 4 },
     display: "grid",
-    gridTemplateColumns: { xs: "1fr", md: "7fr 3fr" },
+    gridTemplateColumns: { xs: "minmax(0, 1fr)", md: "minmax(0, 7fr) minmax(0, 3fr)" },
     gap: { xs: 2, md: 3 },
   }}
 >
@@ -493,12 +509,18 @@ export default function DrillDetails() {
   >
     {/* Coach */}
     <Box
+      onClick={() => navigate(`/coach/${encodeURIComponent(drill.coach || "")}`)}
       sx={{
         bgcolor: "#161616",
         border: "1px solid #1F1F1F",
         borderRadius: "12px",
         boxShadow: "0px 4px 20px #00000066",
         p: 2.5,
+        cursor: "pointer",
+        transition: ".25s",
+        "&:hover": {
+          borderColor: "#3A3A3A",
+        },
       }}
     >
       <Box
@@ -646,6 +668,7 @@ export default function DrillDetails() {
   <Box
   sx={{
     mt: 3,
+    minWidth: 0,
     bgcolor: "#161616",
     border: "1px solid #1F1F1F",
     borderRadius: "12px",
@@ -665,11 +688,19 @@ export default function DrillDetails() {
     14 Days Views
   </Typography>
 
-  <Box sx={{ width: "100%", height: { xs: 220, sm: 280, md: 340 } }}>
-    <ResponsiveContainer width="100%" height="100%">
-      <AreaChart
-        data={chartData}
-      >
+  <Box
+    sx={{
+      width: "100%",
+      height: { xs: 220, sm: 280, md: 340 },
+      overflowX: "auto",
+      overflowY: "hidden",
+    }}
+  >
+    <Box sx={{ minWidth: 840, width: "100%", height: "100%" }}>
+      <ResponsiveContainer width="100%" height="100%">
+        <AreaChart
+          data={chartData}
+        >
         <defs>
           <linearGradient
             id="viewsGradient"
@@ -699,6 +730,9 @@ export default function DrillDetails() {
 
         <XAxis
           dataKey="day"
+          interval={0}
+          tickMargin={10}
+          padding={{ left: 16, right: 36 }}
           tick={{
             fill: "#929292",
             fontSize: 12,
@@ -718,6 +752,21 @@ export default function DrillDetails() {
           tickLine={false}
         />
 
+        <Tooltip
+          cursor={{ stroke: "#2A2A2A" }}
+          contentStyle={{
+            backgroundColor: "#1F1F1F",
+            border: "1px solid #2A2A2A",
+            borderRadius: "10px",
+            fontFamily: "Poppins",
+            fontWeight: 500,
+            fontSize: "12px",
+          }}
+          labelStyle={{ color: "#FFFFFF" }}
+          itemStyle={{ color: "#FFFFFF" }}
+          formatter={(v) => [formatViews(v)]}
+        />
+
         <Area
           type="monotone"
           dataKey="views"
@@ -726,7 +775,8 @@ export default function DrillDetails() {
           fill="url(#viewsGradient)"
         />
       </AreaChart>
-    </ResponsiveContainer>
+      </ResponsiveContainer>
+    </Box>
   </Box>
 </Box>
 </Box>

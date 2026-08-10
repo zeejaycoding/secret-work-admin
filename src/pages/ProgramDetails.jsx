@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Box, Typography, Button, LinearProgress, CircularProgress } from "@mui/material";
+import { Box, Typography, Button, LinearProgress, CircularProgress, Dialog, DialogContent, IconButton, Snackbar, Alert } from "@mui/material";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
@@ -25,14 +25,14 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { getProgram, updateProgram, removeDrillFromProgram } from "../services/api";
+import { getProgram, updateProgram, removeDrillFromProgram, deleteProgram } from "../services/api";
 
 const getDrillId = (item, i) => {
   const id = item.drill?._id || item._id;
   return id ? String(id) : `drill-${i}`;
 };
 
-const SortableDrillRow = ({ id, index, item, onOpen, onRemove }) => {
+const SortableDrillRow = ({ id, index, item, totalUsers, onOpen, onRemove }) => {
   const {
     attributes,
     listeners,
@@ -149,17 +149,31 @@ const SortableDrillRow = ({ id, index, item, onOpen, onRemove }) => {
       </Box>
 
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-        <Typography
-          sx={{
-            fontFamily: "Poppins",
-            fontWeight: 500,
-            fontSize: "11px",
-            color: "#FFFFFF",
-            minWidth: 35,
-          }}
-        >
-          {pct}% Complete
-        </Typography>
+        <Box sx={{ minWidth: 35 }}>
+          <Typography
+            sx={{
+              fontFamily: "Poppins",
+              fontWeight: 600,
+              fontSize: "11px",
+              color: "#FFFFFF",
+            }}
+          >
+            {pct}%
+          </Typography>
+          {typeof drill?.completions === "number" ? (
+            <Typography
+              sx={{
+                fontFamily: "Poppins",
+                fontWeight: 400,
+                fontSize: "10px",
+                color: "#929292",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {drill.completions} of {totalUsers ?? "—"} users
+            </Typography>
+          ) : null}
+        </Box>
         <Box sx={{ width: 90 }}>
           <LinearProgress
             variant="determinate"
@@ -169,7 +183,7 @@ const SortableDrillRow = ({ id, index, item, onOpen, onRemove }) => {
               borderRadius: 4,
               bgcolor: "#2A2A2A",
               "& .MuiLinearProgress-bar": {
-                bgcolor: "#22C55E",
+                bgcolor: pct > 0 ? "#22C55E" : "#6B6B6B",
                 borderRadius: 4,
               },
             }}
@@ -210,6 +224,9 @@ export default function ProgramDetails() {
   const location = useLocation();
   const [program, setProgram] = useState(location.state?.program || null);
   const [loading, setLoading] = useState(!program);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [notify, setNotify] = useState({ open: false, msg: "" });
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
@@ -221,7 +238,10 @@ export default function ProgramDetails() {
       .then((res) => {
         if (active) setProgram(res.data.program);
       })
-      .catch(() => {})
+      .catch((err) => {
+        console.error("Failed to load program:", err?.message || err);
+        if (active) setProgram(null);
+      })
       .finally(() => {
         if (active) setLoading(false);
       });
@@ -250,27 +270,69 @@ export default function ProgramDetails() {
       drill: d.drill?._id || d.drill,
       order: d.order,
     }));
-    setProgram((prev) => (prev ? { ...prev, drills: reordered } : prev));
-    updateProgram(id, { drills: payload }).catch(() => {});
+    const prev = program;
+    setProgram((prevP) => (prevP ? { ...prevP, drills: reordered } : prevP));
+    updateProgram(id, { drills: payload }).catch((err) => {
+      console.error("Failed to reorder drills:", err?.message || err);
+      setProgram(prev);
+      setNotify({ open: true, msg: "Failed to reorder drills" });
+    });
   };
 
   const handleRemoveDrill = (drillId) => {
+    const prev = program;
+    const filtered = (program?.drills || []).filter((d) => getDrillId(d) !== drillId);
+    setProgram((prevP) => (prevP ? { ...prevP, drills: filtered } : prevP));
     removeDrillFromProgram(id, drillId)
       .then((res) => {
         if (res.data?.program) setProgram(res.data.program);
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.error("Failed to remove drill from program:", err?.message || err);
+        setProgram(prev);
+        setNotify({ open: true, msg: "Failed to remove drill" });
+      });
+  };
+
+  const handleDeleteProgram = () => {
+    if (!id || deleting) return;
+    setDeleting(true);
+    deleteProgram(id)
+      .then(() => {
+        setDeleteOpen(false);
+        navigate("/programs");
+      })
+      .catch((err) => {
+        console.error("Failed to delete program:", err?.message || err);
+      })
+      .finally(() => setDeleting(false));
   };
 
   const statusLabel = program?.status
     ? program.status.charAt(0).toUpperCase() + program.status.slice(1)
     : "Published";
 
+  const progCompletion =
+    program?.drills && program.drills.length && program.totalUsers
+      ? Math.min(
+          100,
+          Math.round(
+            (program.drills.reduce(
+              (sum, d) => sum + (d.drill?.completions || 0),
+              0
+            ) /
+              program.drills.length /
+              program.totalUsers) *
+              100
+          )
+        )
+      : 0;
+
   const stats = [
     { value: program?.enrolled ?? 0, label: "Enrolled" },
     {
-      value: program?.completionRate ? `${program.completionRate}%` : "0%",
-      label: "Completion",
+      value: `${progCompletion}%`,
+      label: "Avg completion",
     },
     { value: program?.reviews ?? 0, label: "Reviews" },
   ];
@@ -379,6 +441,7 @@ export default function ProgramDetails() {
         >
           <Button
             startIcon={<CircleX size={16} color="#E50914" />}
+            onClick={() => setDeleteOpen(true)}
             sx={{
               bgcolor: "#1A0404",
               border: "1px solid #E50914",
@@ -538,6 +601,7 @@ export default function ProgramDetails() {
                       id={sortableIds[i]}
                       index={i}
                       item={item}
+                      totalUsers={program?.totalUsers}
                       onOpen={() => navigate(`/drill/${getDrillId(item, i)}`)}
                       onRemove={handleRemoveDrill}
                     />
@@ -584,31 +648,137 @@ export default function ProgramDetails() {
           </Typography>
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-            {["Marcus Johnson", "Daniel Lee", "Alex Rivera", "Ryan Chen", "Mike Thompson"].map((user) => (
-              <Box
-                key={user}
+            {program?.enrolledUsers?.length ? (
+              program.enrolledUsers.map((u) => (
+                <Box
+                  key={u._id}
+                  onClick={() => navigate(`/user/${u._id}`)}
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    bgcolor: "#1F1F1F",
+                    border: "1px solid #1F1F1F",
+                    boxShadow: "0px 4px 20px #00000066",
+                    borderRadius: "10px",
+                    px: 1.5,
+                    py: 1.3,
+                    cursor: "pointer",
+                    gap: 1,
+                  }}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "14px", color: "#FFFFFF", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {u.name}
+                    </Typography>
+                    <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "11px", color: "#929292", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {u.email}
+                    </Typography>
+                  </Box>
+                  <ChevronRight size={16} color="#FFFFFF" />
+                </Box>
+              ))
+            ) : (
+              <Typography
                 sx={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  bgcolor: "#1F1F1F",
-                  border: "1px solid #1F1F1F",
-                  boxShadow: "0px 4px 20px #00000066",
-                  borderRadius: "10px",
-                  px: 1.5,
-                  py: 1.3,
-                  cursor: "pointer",
+                  fontFamily: "Poppins",
+                  fontWeight: 400,
+                  fontSize: "13px",
+                  color: "#6B6B6B",
+                  textAlign: "center",
+                  py: 5,
                 }}
               >
-                <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "14px", color: "#FFFFFF" }}>
-                  {user}
-                </Typography>
-                <ChevronRight size={16} color="#FFFFFF" />
-              </Box>
-            ))}
+                No enrolled users yet
+              </Typography>
+            )}
           </Box>
         </Box>
       </Box>
+
+      {/* Delete Program Dialog */}
+      <Dialog
+        open={deleteOpen}
+        onClose={() => setDeleteOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "16px",
+            boxShadow: "0px 4px 20px #00000066",
+            m: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 600, fontSize: "20px", color: "#FFFFFF" }}>
+              Remove Program
+            </Typography>
+            <IconButton onClick={() => setDeleteOpen(false)} sx={{ color: "#FFFFFF", p: 0 }}>
+              <X size={20} />
+            </IconButton>
+          </Box>
+
+          <Box sx={{ height: "1px", bgcolor: "#1A1A1A", mb: 3 }} />
+
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#A0A0A0", mb: 3 }}>
+            Are you sure you want to remove "{program?.name || "this program"}"? It will be deleted from the database and stop showing in the app and admin panel. This cannot be undone.
+          </Typography>
+
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5, flexWrap: "wrap" }}>
+            <Button
+              onClick={() => setDeleteOpen(false)}
+              sx={{
+                bgcolor: "#1F1F1F",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                "&:hover": { bgcolor: "#1F1F1F" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteProgram}
+              disabled={deleting}
+              sx={{
+                bgcolor: "#E50914",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                boxShadow: "0px 4px 20px #F81B1B40",
+                "&:hover": { bgcolor: "#E50914" },
+                "&.Mui-disabled": { bgcolor: "#E50914", color: "#FFFFFF", opacity: 0.6 },
+              }}
+            >
+              {deleting ? "Removing..." : "Remove"}
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+      <Snackbar
+        open={notify.open}
+        autoHideDuration={4000}
+        onClose={() => setNotify({ open: false, msg: "" })}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+      >
+        <Alert onClose={() => setNotify({ open: false, msg: "" })} severity="error" variant="filled">
+          {notify.msg}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -47,13 +47,22 @@ export default function PodcastDetails() {
   const handleGenerateTranscript = async () => {
     setTranscribing(true);
     setTranscriptError("");
+    // Optimistically mark pending so the polling effect stays active even if
+    // the request returns early with a broken/null body.
+    setEpisode((prev) => ({
+      ...prev,
+      transcriptStatus: "pending",
+      transcript: [],
+    }));
     try {
       const res = await transcribePodcast(id);
-      setEpisode(res.data.podcast);
+      const updated = res?.data?.podcast;
+      if (updated) setEpisode(updated);
     } catch (err) {
-      setTranscriptError(
-        err.response?.data?.error || "Failed to generate transcript"
-      );
+      const message =
+        err.response?.data?.error ||
+        "Failed to generate transcript. It may still be processing in the background — check back shortly.";
+      setTranscriptError(message);
     } finally {
       setTranscribing(false);
     }

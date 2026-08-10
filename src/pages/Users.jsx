@@ -452,7 +452,7 @@ export default function UsersPage() {
               <Tooltip
                 cursor={{ fill: "#1A1A1A" }}
                 contentStyle={{
-                  bgcolor: "#1F1F1F",
+                  backgroundColor: "#1F1F1F",
                   border: "1px solid #2A2A2A",
                   borderRadius: "10px",
                   fontFamily: "Poppins",
