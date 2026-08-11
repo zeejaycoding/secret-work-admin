@@ -5,7 +5,6 @@ const API_URL = "https://secret-work-backend.onrender.com/api";
 const api = axios.create({
   baseURL: API_URL,
   timeout: 30000,
-  headers: { "Content-Type": "application/json" },
 });
 
 api.interceptors.request.use((config) => {
@@ -164,6 +163,8 @@ export const deleteNotification = (id) =>
   api.delete(`/admin/notifications/${id}`);
 
 export const getSettings = () => api.get("/admin/settings");
+
+export const getStorageUsage = () => api.get("/admin/settings/storage");
 
 export const updateSettings = (data) => api.put("/admin/settings", data);
 

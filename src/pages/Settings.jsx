@@ -18,8 +18,9 @@ import {
   HardDrive,
   CheckCircle2,
   Save,
+  RefreshCw,
 } from "lucide-react";
-import { getSettings, updateSettings } from "../services/api";
+import { getSettings, updateSettings, getStorageUsage } from "../services/api";
 
 const TABS = [
   { key: "branding", label: "Branding" },
@@ -93,6 +94,24 @@ const saveBtnSx = {
   },
 };
 
+function formatBytes(bytes) {
+  if (!bytes || bytes <= 0) return "0 B";
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  const i = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+  const value = bytes / Math.pow(1024, i);
+  return `${value >= 100 || i === 0 ? Math.round(value) : value.toFixed(1)} ${units[i]}`;
+}
+
+const storageRowSx = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  bgcolor: "#1F1F1F",
+  border: "1px solid #2A2A2A",
+  borderRadius: "10px",
+  p: 2.5,
+};
+
 export default function SettingsPage() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("branding");
@@ -116,6 +135,31 @@ export default function SettingsPage() {
   // Payments
   const [currency, setCurrency] = useState("USD");
   const [integrationsState, setIntegrationsState] = useState({});
+
+  // Storage
+  const [storage, setStorage] = useState(null);
+  const [storageLoading, setStorageLoading] = useState(false);
+  const [storageError, setStorageError] = useState("");
+
+  const fetchStorage = () => {
+    setStorageLoading(true);
+    setStorageError("");
+    getStorageUsage()
+      .then((res) => {
+        setStorage(res.data);
+      })
+      .catch((error) => {
+        console.error("Failed to load storage usage:", error);
+        setStorageError(
+          error?.response?.data?.error || "Failed to load Cloudinary storage usage."
+        );
+      })
+      .finally(() => setStorageLoading(false));
+  };
+
+  useEffect(() => {
+    fetchStorage();
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -648,72 +692,208 @@ export default function SettingsPage() {
       {/* ── Storage ── */}
       {activeTab === "storage" && (
         <Box sx={cardSx}>
-          <Typography sx={sectionTitleSx}>Storage</Typography>
-          <Typography sx={sectionSubSx}>
-            Media stored and delivered through Cloudinary.
-          </Typography>
-
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              bgcolor: "#1F1F1F",
-              border: "1px solid #2A2A2A",
-              borderRadius: "10px",
-              p: 2.5,
-              mb: 3,
-            }}
-          >
-            <Box>
-              <Typography
-                sx={{
-                  fontFamily: "Poppins",
-                  fontWeight: 500,
-                  fontSize: "14px",
-                  color: "#FFFFFF",
-                }}
-              >
-                Cloudinary
-              </Typography>
-              <Typography
-                sx={{
-                  fontFamily: "Inter",
-                  fontWeight: 500,
-                  fontSize: "11.5px",
-                  color: "#6B6B6B",
-                  mt: 0.3,
-                }}
-              >
-                Drills, podcasts and images
-              </Typography>
-            </Box>
-
-            <Typography
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+            <Typography sx={sectionTitleSx}>Storage</Typography>
+            <Button
+              onClick={fetchStorage}
+              disabled={storageLoading}
+              startIcon={<RefreshCw size={15} className={storageLoading ? "spin" : ""} />}
               sx={{
+                borderColor: "#2A2A2A",
+                borderRadius: "10px",
+                color: "#FFFFFF",
+                textTransform: "none",
                 fontFamily: "Poppins",
                 fontWeight: 500,
-                fontSize: "13px",
-                color: "#929292",
+                fontSize: "12px",
+                px: 2,
+                py: 0.8,
+                minWidth: 0,
+                "&:hover": {
+                  borderColor: "#3A3A3A",
+                  bgcolor: "#1F1F1F",
+                },
               }}
             >
-              1.2 GB / 10 GB
-            </Typography>
+              Refresh
+            </Button>
           </Box>
+          <Typography sx={sectionSubSx}>
+            Live Cloudinary usage for media stored and delivered by the app.
+          </Typography>
 
-          <Box sx={{ width: "100%" }}>
+          {storageError && (
             <Box
               sx={{
-                width: "100%",
-                height: 8,
-                bgcolor: "#2A2A2A",
-                borderRadius: 8,
-                overflow: "hidden",
+                bgcolor: "#2A1215",
+                border: "1px solid #E5091433",
+                borderRadius: "10px",
+                p: 2,
+                mb: 3,
               }}
             >
-              <Box sx={{ width: "12%", height: "100%", bgcolor: "#E50914" }} />
+              <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "12px", color: "#E5737A" }}>
+                {storageError}
+              </Typography>
             </Box>
-          </Box>
+          )}
+
+          {storageLoading && !storage && (
+            <Box sx={storageRowSx}>
+              <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "13px", color: "#929292" }}>
+                Fetching Cloudinary usage…
+              </Typography>
+            </Box>
+          )}
+
+          {storage && !storageLoading && !storage.configured && (
+            <Box sx={storageRowSx}>
+              <Box>
+                <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "14px", color: "#FFFFFF" }}>
+                  Cloudinary
+                </Typography>
+                <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "11.5px", color: "#6B6B6B", mt: 0.3 }}>
+                  Cloudinary credentials are not configured on the server.
+                </Typography>
+              </Box>
+            </Box>
+          )}
+
+          {storage?.configured && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+              <Box sx={storageRowSx}>
+                <Box>
+                  <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "14px", color: "#FFFFFF" }}>
+                    Cloudinary
+                  </Typography>
+                  <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "11.5px", color: "#6B6B6B", mt: 0.3 }}>
+                    {storage.plan ? `${storage.plan} plan` : "Media storage and delivery"}
+                    {storage.cloudName ? ` · ${storage.cloudName}` : ""}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <CheckCircle2 size={16} color="#4CAF50" />
+                  <Typography sx={{ fontFamily: "Poppins", fontWeight: 500, fontSize: "12px", color: "#4CAF50" }}>
+                    Connected
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                <Box
+                  sx={{
+                    flex: 1,
+                    minWidth: { xs: "100%", sm: 180 },
+                    bgcolor: "#1F1F1F",
+                    border: "1px solid #2A2A2A",
+                    borderRadius: "10px",
+                    p: 2.5,
+                  }}
+                >
+                  <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "11.5px", color: "#6B6B6B" }}>
+                    Storage used
+                  </Typography>
+                  <Typography sx={{ fontFamily: "Poppins", fontWeight: 600, fontSize: "22px", color: "#FFFFFF", mt: 0.5 }}>
+                    {formatBytes(storage.storage?.usedBytes)}
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    flex: 1,
+                    minWidth: { xs: "100%", sm: 180 },
+                    bgcolor: "#1F1F1F",
+                    border: "1px solid #2A2A2A",
+                    borderRadius: "10px",
+                    p: 2.5,
+                  }}
+                >
+                  <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "11.5px", color: "#6B6B6B" }}>
+                    Bandwidth
+                  </Typography>
+                  <Typography sx={{ fontFamily: "Poppins", fontWeight: 600, fontSize: "22px", color: "#FFFFFF", mt: 0.5 }}>
+                    {formatBytes(storage.storage?.bandwidthBytes)}
+                  </Typography>
+                </Box>
+
+                <Box
+                  sx={{
+                    flex: 1,
+                    minWidth: { xs: "100%", sm: 180 },
+                    bgcolor: "#1F1F1F",
+                    border: "1px solid #2A2A2A",
+                    borderRadius: "10px",
+                    p: 2.5,
+                  }}
+                >
+                  <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "11.5px", color: "#6B6B6B" }}>
+                    Assets
+                  </Typography>
+                  <Typography sx={{ fontFamily: "Poppins", fontWeight: 600, fontSize: "22px", color: "#FFFFFF", mt: 0.5 }}>
+                    {storage.storage?.objects ?? "-"}
+                  </Typography>
+                </Box>
+              </Box>
+
+              <Box>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+                  <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "12px", color: "#929292" }}>
+                    Credit usage
+                  </Typography>
+                  <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "12px", color: "#929292" }}>
+                    {storage.storage?.creditsUsed ?? 0} / {storage.storage?.creditsLimit ?? 0} credits (
+                    {(storage.storage?.creditsPercent ?? 0).toFixed(2)}%)
+                  </Typography>
+                </Box>
+                <Box sx={{ width: "100%", height: 8, bgcolor: "#2A2A2A", borderRadius: 8, overflow: "hidden" }}>
+                  <Box
+                    sx={{
+                      width: `${Math.min(100, storage.storage?.creditsPercent ?? 0)}%`,
+                      height: "100%",
+                      bgcolor: "#E50914",
+                      borderRadius: 8,
+                      transition: "width .3s",
+                    }}
+                  />
+                </Box>
+              </Box>
+
+              {storage.storage?.byType && (
+                <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+                  {[
+                    { label: "Images", value: storage.storage.byType.images },
+                    { label: "Videos", value: storage.storage.byType.videos },
+                    { label: "Raw files", value: storage.storage.byType.raws },
+                  ].map((item) => (
+                    <Box
+                      key={item.label}
+                      sx={{
+                        flex: 1,
+                        minWidth: { xs: "100%", sm: 120 },
+                        bgcolor: "#1F1F1F",
+                        border: "1px solid #2A2A2A",
+                        borderRadius: "10px",
+                        p: 2,
+                        textAlign: "center",
+                      }}
+                    >
+                      <Typography sx={{ fontFamily: "Poppins", fontWeight: 600, fontSize: "18px", color: "#FFFFFF" }}>
+                        {item.value}
+                      </Typography>
+                      <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "11.5px", color: "#6B6B6B", mt: 0.3 }}>
+                        {item.label}
+                      </Typography>
+                    </Box>
+                  ))}
+                </Box>
+              )}
+
+              <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "11px", color: "#5A5A5A" }}>
+                Last updated: {storage.storage?.updatedAt || "—"}
+              </Typography>
+            </Box>
+          )}
         </Box>
       )}
 
