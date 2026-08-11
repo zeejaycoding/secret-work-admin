@@ -25,7 +25,7 @@ import {
   Video,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api, { getDrills, createDrill, getPros } from "../services/api";
+import api, { getDrills, createDrill, getPros, getCategories } from "../services/api";
 
 function formatViews(n) {
   if (!n) return "0 views";
@@ -88,6 +88,7 @@ export default function ContentLibrary() {
   const [newCoach, setNewCoach] = useState("");
   const [newProId, setNewProId] = useState("");
   const [pros, setPros] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [thumbFile, setThumbFile] = useState(null);
   const [videoFile, setVideoFile] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -134,7 +135,7 @@ export default function ContentLibrary() {
       await createDrill(form);
       setNewTitle("");
       setNewDesc("");
-      setNewCategory("Dribbling");
+      setNewCategory(categories[0]?.name || "Dribbling");
       setNewLevel("Beginner");
       setNewDuration("10 min");
       setNewEquipment("Dumbell");
@@ -210,6 +211,15 @@ export default function ContentLibrary() {
   useEffect(() => {
     getPros()
       .then((res) => setPros(res.data.pros || []))
+      .catch(() => {});
+    getCategories()
+      .then((res) => {
+        const list = res.data.categories || [];
+        setCategories(list);
+        setNewCategory((prev) =>
+          list.length && !list.some((c) => c.name === prev) ? list[0].name : prev
+        );
+      })
       .catch(() => {});
   }, []);
   return (
@@ -427,11 +437,11 @@ export default function ContentLibrary() {
       }}
     >
       <MenuItem value="all">All Categories</MenuItem>
-      <MenuItem value="Dribbling">Dribbling</MenuItem>
-      <MenuItem value="Shooting">Shooting</MenuItem>
-      <MenuItem value="Defence">Defence</MenuItem>
-      <MenuItem value="Passing">Passing</MenuItem>
-      <MenuItem value="Fitness">Fitness</MenuItem>
+      {categories.map((c) => (
+        <MenuItem key={c._id} value={c.name}>
+          {c.name}
+        </MenuItem>
+      ))}
     </Select>
 
     {/* Status */}
@@ -832,11 +842,11 @@ export default function ContentLibrary() {
                 }}
                 IconComponent={(props) => <ChevronDown {...props} size={18} color="#929292" />}
               >
-                <MenuItem value="Dribbling">Dribbling</MenuItem>
-                <MenuItem value="Shooting">Shooting</MenuItem>
-                <MenuItem value="Defence">Defence</MenuItem>
-                <MenuItem value="Passing">Passing</MenuItem>
-                <MenuItem value="Fitness">Fitness</MenuItem>
+                {categories.map((c) => (
+                  <MenuItem key={c._id} value={c.name}>
+                    {c.name}
+                  </MenuItem>
+                ))}
               </Select>
             </Box>
             <Box sx={{ flex: 1 }}>

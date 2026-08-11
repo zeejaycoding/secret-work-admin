@@ -706,12 +706,14 @@ export default function ProgramsCategories() {
                 }}
                 IconComponent={(props) => <ChevronDown {...props} size={18} color="#929292" />}
               >
-                <MenuItem value="all">All Categories</MenuItem>
-                <MenuItem value="Dribbling">Dribbling</MenuItem>
-                <MenuItem value="Shooting">Shooting</MenuItem>
-                <MenuItem value="Defence">Defence</MenuItem>
-                <MenuItem value="Passing">Passing</MenuItem>
-                <MenuItem value="Fitness">Fitness</MenuItem>
+                <MenuItem value="" disabled>
+                  Select category
+                </MenuItem>
+                {categories.map((c) => (
+                  <MenuItem key={c._id} value={c.name}>
+                    {c.name}
+                  </MenuItem>
+                ))}
               </Select>
             </Box>
             <Box sx={{ flex: 1 }}>
