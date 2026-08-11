@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { Box, Typography, Button, LinearProgress, CircularProgress, Dialog, DialogContent, IconButton, TextField } from "@mui/material";
+import { Box, Typography, Button, LinearProgress, CircularProgress, Dialog, DialogContent, IconButton, TextField, Select, MenuItem } from "@mui/material";
 import {
   ArrowLeft,
   Edit,
@@ -10,7 +10,7 @@ import {
   ImagePlus,
   Video,
 } from "lucide-react";
-import { getDrill, updateDrill, updateDrillFiles, deleteDrill } from "../services/api";
+import { getDrill, updateDrill, updateDrillFiles, deleteDrill, getPros } from "../services/api";
 
 import {
   ResponsiveContainer,
@@ -52,7 +52,9 @@ export default function DrillDetails() {
     completionRate: "",
     avgWatchTime: "",
     likes: "",
+    proId: "",
   });
+  const [pros, setPros] = useState([]);
   const [editThumb, setEditThumb] = useState(null);
   const [editVideo, setEditVideo] = useState(null);
 
@@ -66,6 +68,12 @@ export default function DrillDetails() {
       .finally(() => setLoading(false));
   }, [id]);
 
+  useEffect(() => {
+    getPros()
+      .then((res) => setPros(res.data.pros || []))
+      .catch(() => {});
+  }, []);
+
   const openEdit = () => {
     setEditForm({
       title: drill?.title || "",
@@ -73,6 +81,7 @@ export default function DrillDetails() {
       completionRate: drill?.completionRate ?? "",
       avgWatchTime: drill?.avgWatchTime || "",
       likes: drill?.likes ?? "",
+      proId: drill?.proId?._id || drill?.proId || "",
     });
     setEditThumb(null);
     setEditVideo(null);
@@ -96,6 +105,7 @@ export default function DrillDetails() {
       completionRate: Number(editForm.completionRate) || 0,
       avgWatchTime: editForm.avgWatchTime.trim(),
       likes: Number(editForm.likes) || 0,
+      proId: editForm.proId || "",
     };
 
     const finish = (res) => {
@@ -260,6 +270,20 @@ export default function DrillDetails() {
       >
         {drill.coach} • {drill.category} • {drill.duration}
       </Typography>
+
+      {drill.proId?.name && (
+        <Typography
+          sx={{
+            fontFamily: "Poppins",
+            fontWeight: 500,
+            fontSize: "12px",
+            color: "#E50914",
+            mb: 3,
+          }}
+        >
+          Linked athlete: {drill.proId.name}
+        </Typography>
+      )}
 
       {/* Status + Actions */}
       <Box
@@ -926,6 +950,58 @@ export default function DrillDetails() {
               },
             }}
           />
+
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+            Pro Athlete (drills shown on their Learn page)
+          </Typography>
+          <Select
+            value={editForm.proId}
+            onChange={(e) => setEditForm({ ...editForm, proId: e.target.value })}
+            fullWidth
+            displayEmpty
+            renderValue={(v) =>
+              v
+                ? (pros.find((p) => p._id === v) || {}).name || v
+                : "None"
+            }
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  bgcolor: "#121212",
+                  border: "1px solid #1A1A1A",
+                  borderRadius: "10px",
+                  "& .MuiMenuItem-root": {
+                    fontFamily: "Inter",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    color: "#FFFFFF",
+                    "&:hover": { bgcolor: "#1F1F1F" },
+                    "&.Mui-selected": { bgcolor: "#2A2A2A" },
+                  },
+                },
+              },
+            }}
+            sx={{
+              bgcolor: "#121212",
+              borderRadius: "10px",
+              color: "#FFFFFF",
+              fontFamily: "Inter",
+              fontWeight: 500,
+              fontSize: "14px",
+              mb: 2.5,
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1A1A1A" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#1A1A1A" },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1A1A1A" },
+              "& .MuiSelect-select": { py: 1.5 },
+            }}
+          >
+            <MenuItem value="">None</MenuItem>
+            {pros.map((p) => (
+              <MenuItem key={p._id} value={p._id}>
+                {p.name}
+              </MenuItem>
+            ))}
+          </Select>
 
           <Box sx={{ display: "flex", gap: 2, mb: 2.5, flexDirection: { xs: "column", sm: "row" } }}>
             <Box sx={{ flex: 1 }}>

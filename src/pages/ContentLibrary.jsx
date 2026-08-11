@@ -25,7 +25,7 @@ import {
   Video,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import api, { getDrills, createDrill } from "../services/api";
+import api, { getDrills, createDrill, getPros } from "../services/api";
 
 function formatViews(n) {
   if (!n) return "0 views";
@@ -86,6 +86,8 @@ export default function ContentLibrary() {
   const [newDuration, setNewDuration] = useState("10 min");
   const [newEquipment, setNewEquipment] = useState("Dumbell");
   const [newCoach, setNewCoach] = useState("");
+  const [newProId, setNewProId] = useState("");
+  const [pros, setPros] = useState([]);
   const [thumbFile, setThumbFile] = useState(null);
   const [videoFile, setVideoFile] = useState(null);
   const [creating, setCreating] = useState(false);
@@ -121,6 +123,7 @@ export default function ContentLibrary() {
       form.append("title", newTitle.trim());
       form.append("description", newDesc.trim());
       form.append("coach", newCoach.trim());
+      form.append("proId", newProId || "");
       form.append("category", newCategory);
       form.append("level", newLevel);
       form.append("duration", newDuration);
@@ -136,6 +139,7 @@ export default function ContentLibrary() {
       setNewDuration("10 min");
       setNewEquipment("Dumbell");
       setNewCoach("");
+      setNewProId("");
       setThumbFile(null);
       setVideoFile(null);
       setUploadModalOpen(false);
@@ -202,6 +206,12 @@ export default function ContentLibrary() {
   };
 
   useEffect(() => { fetchDrills(search, category, status); }, []);
+
+  useEffect(() => {
+    getPros()
+      .then((res) => setPros(res.data.pros || []))
+      .catch(() => {});
+  }, []);
   return (
     <Box>
       <Box
@@ -998,6 +1008,60 @@ export default function ContentLibrary() {
               },
             }}
           />
+
+          {/* Pro Athlete */}
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
+            Pro Athlete (drills shown on their Learn page)
+          </Typography>
+          <Select
+            value={newProId}
+            onChange={(e) => setNewProId(e.target.value)}
+            fullWidth
+            displayEmpty
+            renderValue={(v) =>
+              v
+                ? (pros.find((p) => p._id === v) || {}).name || v
+                : "None"
+            }
+            MenuProps={{
+              PaperProps: {
+                sx: {
+                  bgcolor: "#121212",
+                  border: "1px solid #1A1A1A",
+                  borderRadius: "10px",
+                  "& .MuiMenuItem-root": {
+                    fontFamily: "Inter",
+                    fontWeight: 500,
+                    fontSize: "14px",
+                    color: "#FFFFFF",
+                    "&:hover": { bgcolor: "#1F1F1F" },
+                    "&.Mui-selected": { bgcolor: "#2A2A2A" },
+                  },
+                },
+              },
+            }}
+            sx={{
+              bgcolor: "#121212",
+              borderRadius: "10px",
+              color: "#FFFFFF",
+              fontFamily: "Inter",
+              fontWeight: 500,
+              fontSize: "14px",
+              mb: 2.5,
+              "& .MuiOutlinedInput-notchedOutline": { borderColor: "#1A1A1A" },
+              "&:hover .MuiOutlinedInput-notchedOutline": { borderColor: "#1A1A1A" },
+              "&.Mui-focused .MuiOutlinedInput-notchedOutline": { borderColor: "#1A1A1A" },
+              "& .MuiSelect-select": { py: 1.5 },
+            }}
+            IconComponent={(props) => <ChevronDown {...props} size={18} color="#929292" />}
+          >
+            <MenuItem value="">None</MenuItem>
+            {pros.map((p) => (
+              <MenuItem key={p._id} value={p._id}>
+                {p.name}
+              </MenuItem>
+            ))}
+          </Select>
 
           {/* Upload Thumbnail */}
           <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
