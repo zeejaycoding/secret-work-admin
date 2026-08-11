@@ -22,6 +22,14 @@ import {
 } from "lucide-react";
 import { getPros, createPro, updatePro } from "../services/api";
 
+const PRO_ORDER = ["latin", "cooper", "corey", "destiny", "jayson"];
+
+const rankPro = (name) => {
+  const n = String(name || "").toLowerCase();
+  const i = PRO_ORDER.findIndex((k) => n.includes(k));
+  return i === -1 ? PRO_ORDER.length : i;
+};
+
 export default function LearnFromThePros() {
   const [pros, setPros] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +49,12 @@ export default function LearnFromThePros() {
   const fetchPros = () => {
     setLoading(true);
     getPros()
-      .then((res) => setPros(res.data.pros || []))
+      .then((res) => {
+        const list = res.data.pros || [];
+        setPros(
+          [...list].sort((a, b) => rankPro(a.name) - rankPro(b.name))
+        );
+      })
       .catch(() => setPros([]))
       .finally(() => setLoading(false));
   };
