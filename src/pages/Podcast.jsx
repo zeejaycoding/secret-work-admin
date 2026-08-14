@@ -28,9 +28,10 @@ import {
   ChevronDown,
   CalendarClock,
   Video,
+  Trash2,
 } from "lucide-react";
 
-import { getDashboardStats, getPodcasts, createPodcast } from "../services/api";
+import { getDashboardStats, getPodcasts, createPodcast, deletePodcast } from "../services/api";
 import { PODCAST_HEADERS } from "../data/podcastEpisodes";
 
 const cellSx = {
@@ -161,6 +162,8 @@ export default function Podcast() {
   const [scheduleTime, setScheduleTime] = useState("09:00");
   const [mediaFile, setMediaFile] = useState(null);
   const [formError, setFormError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => {
     getDashboardStats()
@@ -277,6 +280,8 @@ export default function Podcast() {
       const res = await createPodcast(formData);
       setEpisodes((prev) => [res.data.podcast, ...prev]);
       setOpen(false);
+      setUploadSuccess("Episode uploaded successfully");
+      setTimeout(() => setUploadSuccess(""), 4000);
     } catch (err) {
       setFormError(
         err.response?.data?.error || "Failed to add episode. Please try again."
@@ -284,6 +289,18 @@ export default function Podcast() {
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleDeleteEpisode = () => {
+    if (!deleteConfirm) return;
+    deletePodcast(deleteConfirm._id)
+      .then(() => {
+        setEpisodes((prev) => prev.filter((ep) => ep._id !== deleteConfirm._id));
+        setDeleteConfirm(null);
+      })
+      .catch(() => {
+        setDeleteConfirm(null);
+      });
   };
 
   return (
@@ -369,6 +386,30 @@ export default function Podcast() {
           Add Episode
         </Button>
       </Box>
+
+      {uploadSuccess && (
+        <Box
+          sx={{
+            mb: 3,
+            bgcolor: "#0F2A1A",
+            border: "1px solid #22C55E",
+            borderRadius: "10px",
+            px: 2,
+            py: 1.5,
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: "Inter",
+              fontWeight: 500,
+              fontSize: "13px",
+              color: "#22C55E",
+            }}
+          >
+            {uploadSuccess}
+          </Typography>
+        </Box>
+      )}
 
       {/* Stats Cards */}
       <Box
@@ -687,6 +728,7 @@ export default function Podcast() {
 
                 {/* Action */}
                 <Box
+                  onClick={(e) => { e.stopPropagation(); setDeleteConfirm(ep); }}
                   sx={{
                     width: 32,
                     height: 32,
@@ -695,9 +737,12 @@ export default function Podcast() {
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
+                    cursor: "pointer",
+                    transition: "background .15s",
+                    "&:hover": { bgcolor: "#2A0F12" },
                   }}
                 >
-                  <MoreHorizontal size={16} color="#929292" />
+                  <Trash2 size={16} color="#E50914" />
                 </Box>
               </Box>
             ))}
@@ -752,7 +797,23 @@ export default function Podcast() {
                     {ep.duration}
                   </Typography>
                 </Box>
-                <ChevronRight size={18} color="#929292" />
+                <Box
+                  onClick={(e) => { e.stopPropagation(); setDeleteConfirm(ep); }}
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    bgcolor: "#1F1F1F",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                    flexShrink: 0,
+                    "&:hover": { bgcolor: "#2A0F12" },
+                  }}
+                >
+                  <Trash2 size={16} color="#E50914" />
+                </Box>
               </Box>
 
               {/* Meta */}
@@ -835,6 +896,75 @@ export default function Podcast() {
         </Box>
         )}
       </Box>
+
+      {/* Delete Episode Confirmation */}
+      <Dialog
+        open={Boolean(deleteConfirm)}
+        onClose={() => setDeleteConfirm(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "16px",
+            boxShadow: "0px 4px 20px #00000066",
+            m: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 600, fontSize: "20px", color: "#FFFFFF" }}>
+              Delete Episode
+            </Typography>
+            <IconButton onClick={() => setDeleteConfirm(null)} sx={{ color: "#FFFFFF", p: 0 }}>
+              <X size={20} />
+            </IconButton>
+          </Box>
+          <Box sx={{ height: "1px", bgcolor: "#1A1A1A", mb: 3 }} />
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#929292", mb: 3 }}>
+            Are you sure you want to delete "{deleteConfirm?.title}"? This action cannot be undone.
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+            <Button
+              onClick={() => setDeleteConfirm(null)}
+              sx={{
+                bgcolor: "#1F1F1F",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                "&:hover": { bgcolor: "#1F1F1F" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDeleteEpisode}
+              sx={{
+                bgcolor: "#E50914",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                boxShadow: "0px 4px 20px #F81B1B40",
+                "&:hover": { bgcolor: "#E50914" },
+              }}
+            >
+              Delete
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={open}

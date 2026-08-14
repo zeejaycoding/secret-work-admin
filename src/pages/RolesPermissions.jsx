@@ -13,15 +13,18 @@ import {
   TextField,
   Snackbar,
   Alert,
+  IconButton,
 } from "@mui/material";
 
 import {
   ShieldCheck,
   Plus,
   Users,
+  X,
+  Trash2,
 } from "lucide-react";
 
-import { getRoles, updateRole, createRole } from "../services/api";
+import { getRoles, updateRole, createRole, deleteRole } from "../services/api";
 
 const switchSx = {
   "& .MuiSwitch-switchBase.Mui-checked": {
@@ -41,6 +44,7 @@ export default function RolesPermissionsPage() {
   const [newRole, setNewRole] = useState("");
   const [creating, setCreating] = useState(false);
   const [savingKey, setSavingKey] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     severity: "success",
@@ -61,6 +65,7 @@ export default function RolesPermissionsPage() {
 
   const roles = data?.roles || [];
   const permissions = data?.permissions || [];
+  const DEFAULT_ROLE_KEYS = ["admin", "coach", "moderator", "member"];
 
   const togglePermission = (roleKey, permKey) => {
     const role = roles.find((r) => r.key === roleKey);
@@ -116,6 +121,28 @@ export default function RolesPermissionsPage() {
         });
       })
       .finally(() => setCreating(false));
+  };
+
+  const handleDelete = () => {
+    if (!deleteConfirm) return;
+    deleteRole(deleteConfirm.key)
+      .then(() => {
+        setDeleteConfirm(null);
+        setSnackbar({
+          open: true,
+          severity: "success",
+          message: `Role "${deleteConfirm.label}" deleted`,
+        });
+        fetchRoles();
+      })
+      .catch((err) => {
+        setDeleteConfirm(null);
+        setSnackbar({
+          open: true,
+          severity: "error",
+          message: err.response?.data?.error || "Failed to delete role",
+        });
+      });
   };
 
   return (
@@ -270,7 +297,18 @@ export default function RolesPermissionsPage() {
                     {role.label}
                   </Typography>
 
-                  <ShieldCheck size={20} color="#484848" />
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                    {!DEFAULT_ROLE_KEYS.includes(role.key) && (
+                      <IconButton
+                        size="small"
+                        onClick={(e) => { e.stopPropagation(); setDeleteConfirm(role); }}
+                        sx={{ color: "#E50914", p: 0.3, "&:hover": { color: "#FF6B6B" } }}
+                      >
+                        <Trash2 size={14} />
+                      </IconButton>
+                    )}
+                    <ShieldCheck size={20} color="#484848" />
+                  </Box>
                 </Box>
 
                 <Typography
@@ -444,6 +482,80 @@ export default function RolesPermissionsPage() {
           </Box>
         </>
       )}
+
+      {/* Delete Role Confirmation */}
+      <Dialog
+        open={Boolean(deleteConfirm)}
+        onClose={() => setDeleteConfirm(null)}
+        PaperProps={{
+          sx: {
+            bgcolor: "#161616",
+            border: "1px solid #2A2A2A",
+            borderRadius: "12px",
+            width: 420,
+            maxWidth: "92vw",
+            p: 1,
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            fontFamily: "Poppins",
+            fontWeight: 500,
+            fontSize: "16px",
+            color: "#FFFFFF",
+          }}
+        >
+          Delete Role
+        </DialogTitle>
+        <DialogContent>
+          <Typography
+            sx={{
+              fontFamily: "Inter",
+              fontWeight: 500,
+              fontSize: "14px",
+              color: "#929292",
+            }}
+          >
+            Are you sure you want to delete "{deleteConfirm?.label}"? Users with this role will be reassigned to "member". This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button
+            onClick={() => setDeleteConfirm(null)}
+            sx={{
+              bgcolor: "#2A2A2A",
+              borderRadius: "10px",
+              color: "#D6D6D6",
+              textTransform: "none",
+              fontFamily: "Poppins",
+              fontWeight: 500,
+              fontSize: "12px",
+              px: 2.5,
+              "&:hover": { bgcolor: "#363636" },
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleDelete}
+            sx={{
+              bgcolor: "#E50914",
+              borderRadius: "10px",
+              color: "#FFFFFF",
+              textTransform: "none",
+              fontFamily: "Poppins",
+              fontWeight: 500,
+              fontSize: "12px",
+              px: 2.5,
+              boxShadow: "0px 4px 15px #F81B1B40",
+              "&:hover": { bgcolor: "#C10812" },
+            }}
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Role Dialog */}
       <Dialog

@@ -440,29 +440,7 @@ export default function UserDetails() {
             )}
           </Button>
 
-          <Button
-            startIcon={<Mail size={15} color="#FFFFFF" />}
-            onClick={handleEmail}
-            sx={{
-              bgcolor: "#1F1F1F",
-              border: "1px solid #2A2A2A",
-              borderRadius: "10px",
-              color: "#D6D6D6",
-              textTransform: "none",
-              fontFamily: "Poppins",
-              fontWeight: 500,
-              fontSize: "12px",
-              px: 2.5,
-              py: 1,
-              justifyContent: "flex-start",
-              "&:hover": {
-                bgcolor: "#1F1F1F",
-                borderColor: "#3A3A3A",
-              },
-            }}
-          >
-            Email
-          </Button>
+
 
           <Button
             startIcon={<Key size={15} color="#FFFFFF" />}

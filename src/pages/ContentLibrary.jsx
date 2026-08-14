@@ -23,6 +23,7 @@ import {
   X,
   ImagePlus,
   Video,
+  ChevronRight,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import api, { getDrills, createDrill, getPros, getCategories } from "../services/api";
@@ -93,6 +94,8 @@ export default function ContentLibrary() {
   const [videoFile, setVideoFile] = useState(null);
   const [creating, setCreating] = useState(false);
   const [uploadError, setUploadError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
+  const [viewMode, setViewMode] = useState("grid");
 
   const handleCreateDrill = async () => {
     if (!newTitle.trim() || creating) return;
@@ -145,6 +148,8 @@ export default function ContentLibrary() {
       setVideoFile(null);
       setUploadModalOpen(false);
       fetchDrills(search, category, status);
+      setUploadSuccess("Drill uploaded successfully");
+      setTimeout(() => setUploadSuccess(""), 4000);
     } catch (err) {
       const backendMsg = err.response?.data?.error;
       let msg = backendMsg || err.message || "Failed to upload drill. Please try again.";
@@ -526,41 +531,73 @@ export default function ContentLibrary() {
 >
   {/* Grid View */}
   <Box
+    onClick={() => setViewMode("grid")}
     sx={{
       width: 44,
       height: "100%",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      bgcolor: "#2A2A2A", // active
+      bgcolor: viewMode === "grid" ? "#2A2A2A" : "transparent",
       cursor: "pointer",
+      borderRadius: "10px",
+      transition: "background .15s",
+      "&:hover": { bgcolor: viewMode === "grid" ? "#2A2A2A" : "#252525" },
     }}
   >
     <LayoutGrid
       size={18}
-      color="#FFFFFF"
+      color={viewMode === "grid" ? "#FFFFFF" : "#929292"}
     />
   </Box>
 
   {/* List View */}
   <Box
+    onClick={() => setViewMode("list")}
     sx={{
       width: 44,
       height: "100%",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
+      bgcolor: viewMode === "list" ? "#2A2A2A" : "transparent",
       cursor: "pointer",
+      borderRadius: "10px",
+      transition: "background .15s",
+      "&:hover": { bgcolor: viewMode === "list" ? "#2A2A2A" : "#252525" },
     }}
   >
     <List
       size={18}
-      color="#929292"
+      color={viewMode === "list" ? "#FFFFFF" : "#929292"}
     />
   </Box>
 </Box>
   </Box>
 </Box>
+{uploadSuccess && (
+  <Box
+    sx={{
+      mt: 2,
+      bgcolor: "#0F2A1A",
+      border: "1px solid #22C55E",
+      borderRadius: "10px",
+      px: 2,
+      py: 1.5,
+    }}
+  >
+    <Typography
+      sx={{
+        fontFamily: "Inter",
+        fontWeight: 500,
+        fontSize: "13px",
+        color: "#22C55E",
+      }}
+    >
+      {uploadSuccess}
+    </Typography>
+  </Box>
+)}
 {loading ? (
   <Box
     sx={{
@@ -602,6 +639,7 @@ export default function ContentLibrary() {
     </Typography>
   </Box>
 ) : (
+  viewMode === "grid" ? (
   <Box
     sx={{
       mt: 3,
@@ -704,6 +742,102 @@ export default function ContentLibrary() {
     </Box>
   ))}
   </Box>
+  ) : (
+  <Box
+    sx={{
+      mt: 3,
+      display: "flex",
+      flexDirection: "column",
+      gap: 1,
+    }}
+  >
+    {drills.map((drill) => (
+      <Box
+        key={drill.id}
+        onClick={() => navigate(`/drill/${drill.id}`)}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          gap: 2,
+          bgcolor: "#161616",
+          border: "1px solid #1F1F1F",
+          borderRadius: "10px",
+          px: 2,
+          py: 1.5,
+          cursor: "pointer",
+          transition: "background .15s",
+          "&:hover": { bgcolor: "#1A1A1A", borderColor: "#3A3A3A" },
+        }}
+      >
+        {drill.image ? (
+          <Box
+            component="img"
+            src={drill.image}
+            sx={{
+              width: 60,
+              height: 44,
+              borderRadius: "8px",
+              objectFit: "cover",
+              flexShrink: 0,
+            }}
+          />
+        ) : (
+          <Box
+            sx={{
+              width: 60,
+              height: 44,
+              borderRadius: "8px",
+              bgcolor: "#2A2A2A",
+              flexShrink: 0,
+            }}
+          />
+        )}
+
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography
+            sx={{
+              fontFamily: "Poppins",
+              fontWeight: 600,
+              fontSize: "14px",
+              color: "#FFFFFF",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {drill.title}
+          </Typography>
+          <Typography
+            sx={{
+              fontFamily: "Poppins",
+              fontWeight: 500,
+              fontSize: "11px",
+              color: "#929292",
+            }}
+          >
+            {drill.coach} • {drill.category}
+          </Typography>
+        </Box>
+
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.7, flexShrink: 0 }}>
+          <Eye size={15} color="#FFFFFF" />
+          <Typography
+            sx={{
+              fontFamily: "Poppins",
+              fontWeight: 500,
+              fontSize: "11px",
+              color: "#929292",
+            }}
+          >
+            {drill.views}
+          </Typography>
+        </Box>
+
+        <ChevronRight size={16} color="#929292" style={{ flexShrink: 0 }} />
+      </Box>
+    ))}
+  </Box>
+  )
 )}
       {/* Upload Drill Modal */}
       <Dialog

@@ -153,6 +153,8 @@ export const createRole = (data) => api.post("/admin/roles", data);
 export const removeRoleUser = (key, userId) =>
   api.delete(`/admin/roles/${key}/users/${userId}`);
 
+export const deleteRole = (key) => api.delete(`/admin/roles/${key}`);
+
 export const createNotification = (data, config) =>
   api.post("/admin/notifications", data, config);
 

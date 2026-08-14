@@ -32,6 +32,7 @@ import {
   Eye,
   Trash2,
   History,
+  Pencil,
 } from "lucide-react";
 
 import {
@@ -144,6 +145,7 @@ export default function NotificationsPage() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
+  const [editingDraft, setEditingDraft] = useState(null);
 
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [scheduleTime, setScheduleTime] = useState("");
@@ -260,6 +262,23 @@ export default function NotificationsPage() {
     });
   };
 
+  const editDraft = (entry) => {
+    setEditingDraft(entry);
+    setChannel(entry.channel);
+    setAudience(entry.audience);
+    setTitle(entry.title);
+    setMessage(entry.message || "");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const cancelEdit = () => {
+    setEditingDraft(null);
+    setTitle("");
+    setMessage("");
+    setChannel("push");
+    setAudience("all");
+  };
+
   const viewHistory = (entry) => {
     showSnackbar(
       `${channelLabel(entry.channel)} · ${entry.title}: ${
@@ -300,6 +319,10 @@ export default function NotificationsPage() {
           : "Notification saved locally — backend unreachable",
         ok ? "success" : "error"
       );
+      if (editingDraft && ok) {
+        removeHistory(editingDraft.id);
+      }
+      setEditingDraft(null);
       setTitle("");
       setMessage("");
     } finally {
@@ -369,6 +392,10 @@ export default function NotificationsPage() {
         ok ? "Draft saved" : "Draft saved locally — backend unreachable",
         ok ? "success" : "error"
       );
+      if (editingDraft && ok) {
+        removeHistory(editingDraft.id);
+      }
+      setEditingDraft(null);
     } catch {
       showSnackbar("Could not save draft", "error");
     }
@@ -456,17 +483,37 @@ export default function NotificationsPage() {
             p: 3,
           }}
         >
-          <Typography
-            sx={{
-              fontFamily: "Poppins",
-              fontWeight: 500,
-              fontSize: "16px",
-              color: "#FFFFFF",
-              mb: 2.5,
-            }}
-          >
-            Compose
-          </Typography>
+          <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2.5 }}>
+            <Typography
+              sx={{
+                fontFamily: "Poppins",
+                fontWeight: 500,
+                fontSize: "16px",
+                color: "#FFFFFF",
+              }}
+            >
+              {editingDraft ? "Edit Draft" : "Compose"}
+            </Typography>
+            {editingDraft && (
+              <Button
+                onClick={cancelEdit}
+                sx={{
+                  bgcolor: "#2A2A2A",
+                  borderRadius: "10px",
+                  color: "#D6D6D6",
+                  textTransform: "none",
+                  fontFamily: "Poppins",
+                  fontWeight: 500,
+                  fontSize: "12px",
+                  px: 2,
+                  py: 0.8,
+                  "&:hover": { bgcolor: "#363636" },
+                }}
+              >
+                Cancel Edit
+              </Button>
+            )}
+          </Box>
 
           {/* Tabs */}
           <Box sx={{ display: "flex", gap: 1, mb: 3, flexWrap: "wrap" }}>
@@ -1010,24 +1057,35 @@ export default function NotificationsPage() {
                         >
                           <Eye size={16} />
                         </IconButton>
-                        {h.status === "Draft" && !String(h.id).startsWith("local-") && (
-                          <IconButton
-                            size="small"
-                            onClick={async () => {
-                              try {
-                                const res = await sendNotification(h.id);
-                                const updated = normalizeNotification(res.data.notification);
-                                const next = history.map((x) => (x.id === h.id ? updated : x));
-                                persistHistory(next);
-                                showSnackbar("Draft sent", "success");
-                              } catch (err) {
-                                showSnackbar("Failed to send draft", "error");
-                              }
-                            }}
-                            sx={{ color: "#929292", "&:hover": { color: "#FFFFFF" } }}
-                          >
-                            <Send size={16} />
-                          </IconButton>
+                        {h.status === "Draft" && (
+                          <>
+                            <IconButton
+                              size="small"
+                              onClick={() => editDraft(h)}
+                              sx={{ color: "#929292", "&:hover": { color: "#22C55E" } }}
+                            >
+                              <Pencil size={16} />
+                            </IconButton>
+                            {!String(h.id).startsWith("local-") && (
+                              <IconButton
+                                size="small"
+                                onClick={async () => {
+                                  try {
+                                    const res = await sendNotification(h.id);
+                                    const updated = normalizeNotification(res.data.notification);
+                                    const next = history.map((x) => (x.id === h.id ? updated : x));
+                                    persistHistory(next);
+                                    showSnackbar("Draft sent", "success");
+                                  } catch (err) {
+                                    showSnackbar("Failed to send draft", "error");
+                                  }
+                                }}
+                                sx={{ color: "#929292", "&:hover": { color: "#FFFFFF" } }}
+                              >
+                                <Send size={16} />
+                              </IconButton>
+                            )}
+                          </>
                         )}
                         <IconButton
                           size="small"

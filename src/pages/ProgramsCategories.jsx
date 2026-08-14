@@ -21,6 +21,7 @@ import {
   Plus,
   GripVertical,
   X,
+  Trash2,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -40,6 +41,7 @@ import { CSS } from "@dnd-kit/utilities";
 import {
   getCategories,
   createCategory,
+  deleteCategory,
   getPrograms,
   createProgram,
   updateProgram,
@@ -306,7 +308,8 @@ export default function ProgramsCategories() {
   const [createCat, setCreateCat] = useState("");
   const [createDuration, setCreateDuration] = useState("4");
   const [loading, setLoading] = useState(true);
-  const [notify, setNotify] = useState({ open: false, msg: "" });
+  const [deleteCatConfirm, setDeleteCatConfirm] = useState(null);
+  const [notify, setNotify] = useState({ open: false, msg: "", severity: "error" });
 
   useEffect(() => {
     Promise.all([
@@ -345,6 +348,24 @@ export default function ProgramsCategories() {
       .then((res) => setCategories(res.data.categories || []))
       .catch((err) => {
         console.error("Failed to add category:", err?.message || err);
+      });
+  };
+
+  const handleDeleteCategory = (cat) => {
+    deleteCategory(cat._id)
+      .then((res) => {
+        const drillCount = res.data.deletedDrills || 0;
+        setDeleteCatConfirm(null);
+        const msg = drillCount > 0
+          ? `Category "${cat.name}" and ${drillCount} drill${drillCount > 1 ? "s" : ""} deleted`
+          : `Category "${cat.name}" deleted`;
+        setNotify({ open: true, msg, severity: "success" });
+        return getCategories();
+      })
+      .then((res) => setCategories(res.data.categories || []))
+      .catch((err) => {
+        console.error("Failed to delete category:", err?.message || err);
+        setNotify({ open: true, msg: "Failed to delete category", severity: "error" });
       });
   };
 
@@ -524,24 +545,33 @@ export default function ProgramsCategories() {
               >
                 {cat.name}
               </Typography>
-              <Box
-                sx={{
-                  bgcolor: "#2A2A2A",
-                  borderRadius: "6px",
-                  px: 1.5,
-                  py: 0.4,
-                }}
-              >
-                <Typography
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Box
                   sx={{
-                    fontFamily: "Poppins",
-                    fontWeight: 500,
-                    fontSize: "13px",
-                    color: "#FFFFFF",
+                    bgcolor: "#2A2A2A",
+                    borderRadius: "6px",
+                    px: 1.5,
+                    py: 0.4,
                   }}
                 >
-                  {cat.drillCount}
-                </Typography>
+                  <Typography
+                    sx={{
+                      fontFamily: "Poppins",
+                      fontWeight: 500,
+                      fontSize: "13px",
+                      color: "#FFFFFF",
+                    }}
+                  >
+                    {cat.drillCount}
+                  </Typography>
+                </Box>
+                <IconButton
+                  size="small"
+                  onClick={() => setDeleteCatConfirm(cat)}
+                  sx={{ color: "#E50914", p: 0.3, "&:hover": { color: "#FF6B6B" } }}
+                >
+                  <Trash2 size={14} />
+                </IconButton>
               </Box>
             </Box>
           ))}
@@ -948,13 +978,99 @@ export default function ProgramsCategories() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Category Confirmation */}
+      <Dialog
+        open={Boolean(deleteCatConfirm)}
+        onClose={() => setDeleteCatConfirm(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "16px",
+            boxShadow: "0px 4px 20px #00000066",
+            m: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 600, fontSize: "20px", color: "#FFFFFF" }}>
+              Delete Category
+            </Typography>
+            <IconButton onClick={() => setDeleteCatConfirm(null)} sx={{ color: "#FFFFFF", p: 0 }}>
+              <X size={20} />
+            </IconButton>
+          </Box>
+          <Box sx={{ height: "1px", bgcolor: "#1A1A1A", mb: 3 }} />
+          <Box
+            sx={{
+              bgcolor: "#2A0F12",
+              border: "1px solid #E50914",
+              borderRadius: "10px",
+              px: 2,
+              py: 1.5,
+              mb: 2,
+            }}
+          >
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 600, fontSize: "14px", color: "#FF6B6B", mb: 0.5 }}>
+              Warning
+            </Typography>
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "13px", color: "#FF6B6B" }}>
+              Deleting "{deleteCatConfirm?.name}" will also permanently delete all {deleteCatConfirm?.drillCount || 0} drill{(deleteCatConfirm?.drillCount || 0) !== 1 ? "s" : ""} in this category.
+            </Typography>
+          </Box>
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#929292", mb: 3 }}>
+            This action cannot be undone.
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+            <Button
+              onClick={() => setDeleteCatConfirm(null)}
+              sx={{
+                bgcolor: "#1F1F1F",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                "&:hover": { bgcolor: "#1F1F1F" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleDeleteCategory(deleteCatConfirm)}
+              sx={{
+                bgcolor: "#E50914",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                boxShadow: "0px 4px 20px #F81B1B40",
+                "&:hover": { bgcolor: "#E50914" },
+              }}
+            >
+              Delete
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
       <Snackbar
         open={notify.open}
         autoHideDuration={4000}
-        onClose={() => setNotify({ open: false, msg: "" })}
+        onClose={() => setNotify({ open: false, msg: "", severity: "error" })}
         anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       >
-        <Alert onClose={() => setNotify({ open: false, msg: "" })} severity="error" variant="filled">
+        <Alert onClose={() => setNotify({ open: false, msg: "", severity: "error" })} severity={notify.severity} variant="filled">
           {notify.msg}
         </Alert>
       </Snackbar>

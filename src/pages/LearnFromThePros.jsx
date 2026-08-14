@@ -19,8 +19,9 @@ import {
   Star,
   Home,
   ChevronRight,
+  Trash2,
 } from "lucide-react";
-import { getPros, createPro, updatePro } from "../services/api";
+import { getPros, createPro, updatePro, deletePro } from "../services/api";
 
 const PRO_ORDER = ["latin", "cooper", "corey", "destiny", "jayson"];
 
@@ -41,8 +42,10 @@ export default function LearnFromThePros() {
   const [imageFile, setImageFile] = useState(null);
   const [creating, setCreating] = useState(false);
   const [addError, setAddError] = useState("");
+  const [uploadSuccess, setUploadSuccess] = useState("");
 
   const [changeModalOpen, setChangeModalOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   const bannerPro = pros.find((p) => p.homepageBanner) || null;
 
@@ -94,6 +97,8 @@ export default function LearnFromThePros() {
         setImageFile(null);
         setAddModalOpen(false);
         fetchPros();
+        setUploadSuccess("Athlete added successfully");
+        setTimeout(() => setUploadSuccess(""), 4000);
       })
       .catch((err) => {
         const backendMsg = err.response?.data?.error;
@@ -105,6 +110,18 @@ export default function LearnFromThePros() {
   const handleFeatureFromPicker = (pro) => {
     handleToggle(pro, "homepageBanner", true);
     setChangeModalOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (!deleteConfirm) return;
+    deletePro(deleteConfirm._id)
+      .then(() => {
+        setDeleteConfirm(null);
+        fetchPros();
+      })
+      .catch(() => {
+        setDeleteConfirm(null);
+      });
   };
 
   const switchSx = {
@@ -209,6 +226,30 @@ export default function LearnFromThePros() {
           Add athlete
         </Button>
       </Box>
+
+      {uploadSuccess && (
+        <Box
+          sx={{
+            mb: 3,
+            bgcolor: "#0F2A1A",
+            border: "1px solid #22C55E",
+            borderRadius: "10px",
+            px: 2,
+            py: 1.5,
+          }}
+        >
+          <Typography
+            sx={{
+              fontFamily: "Inter",
+              fontWeight: 500,
+              fontSize: "13px",
+              color: "#22C55E",
+            }}
+          >
+            {uploadSuccess}
+          </Typography>
+        </Box>
+      )}
 
       {/* Homepage Banner */}
       <Box
@@ -379,17 +420,30 @@ export default function LearnFromThePros() {
               )}
 
               <Box sx={{ p: 2 }}>
-                <Typography
-                  sx={{
-                    fontFamily: "Inter",
-                    fontWeight: 500,
-                    fontSize: "16px",
-                    color: "#FFFFFF",
-                    mb: 0.5,
-                  }}
-                >
-                  {pro.name}
-                </Typography>
+                <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 0.5 }}>
+                  <Typography
+                    sx={{
+                      fontFamily: "Inter",
+                      fontWeight: 500,
+                      fontSize: "16px",
+                      color: "#FFFFFF",
+                      minWidth: 0,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      flex: 1,
+                    }}
+                  >
+                    {pro.name}
+                  </Typography>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => { e.stopPropagation(); setDeleteConfirm(pro); }}
+                    sx={{ color: "#E50914", p: 0.3, ml: 0.5, "&:hover": { color: "#FF6B6B" } }}
+                  >
+                    <Trash2 size={16} />
+                  </IconButton>
+                </Box>
 
                 <Typography
                   sx={{
@@ -713,6 +767,75 @@ export default function LearnFromThePros() {
               }}
             >
               {creating ? "Adding..." : "Add"}
+            </Button>
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Athlete Confirmation */}
+      <Dialog
+        open={Boolean(deleteConfirm)}
+        onClose={() => setDeleteConfirm(null)}
+        maxWidth="xs"
+        fullWidth
+        PaperProps={{
+          sx: {
+            bgcolor: "#0B0B0B",
+            border: "1px solid #2A2A2A",
+            borderRadius: "16px",
+            boxShadow: "0px 4px 20px #00000066",
+            m: 2,
+          },
+        }}
+      >
+        <DialogContent sx={{ p: 3 }}>
+          <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 2 }}>
+            <Typography sx={{ fontFamily: "Inter", fontWeight: 600, fontSize: "20px", color: "#FFFFFF" }}>
+              Delete Athlete
+            </Typography>
+            <IconButton onClick={() => setDeleteConfirm(null)} sx={{ color: "#FFFFFF", p: 0 }}>
+              <X size={20} />
+            </IconButton>
+          </Box>
+          <Box sx={{ height: "1px", bgcolor: "#1A1A1A", mb: 3 }} />
+          <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#929292", mb: 3 }}>
+            Are you sure you want to delete "{deleteConfirm?.name}"? This will also remove all linked drills. This action cannot be undone.
+          </Typography>
+          <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1.5 }}>
+            <Button
+              onClick={() => setDeleteConfirm(null)}
+              sx={{
+                bgcolor: "#1F1F1F",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                "&:hover": { bgcolor: "#1F1F1F" },
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleDelete}
+              sx={{
+                bgcolor: "#E50914",
+                color: "#FFFFFF",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: "14px",
+                textTransform: "none",
+                borderRadius: "10px",
+                px: 3,
+                py: 1.3,
+                boxShadow: "0px 4px 20px #F81B1B40",
+                "&:hover": { bgcolor: "#E50914" },
+              }}
+            >
+              Delete
             </Button>
           </Box>
         </DialogContent>
