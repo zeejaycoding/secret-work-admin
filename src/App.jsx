@@ -19,6 +19,7 @@ import EditPlan from "./pages/EditPlan";
 import Podcast from "./pages/Podcast";
 import PodcastDetails from "./pages/PodcastDetails";
 import Notifications from "./pages/Notifications";
+import SupportQueries from "./pages/SupportQueries";
 import RolesPermissions from "./pages/RolesPermissions";
 import RoleDetail from "./pages/RoleDetail";
 import Settings from "./pages/Settings";
@@ -60,6 +61,7 @@ function App() {
           <Route path="/podcasts" element={<Podcast />} />
           <Route path="/podcast/:id" element={<PodcastDetails />} />
           <Route path="/notifications" element={<Notifications />} />
+          <Route path="/support" element={<SupportQueries />} />
           <Route path="/roles" element={<RolesPermissions />} />
           <Route path="/role/:key" element={<RoleDetail />} />
           <Route path="/settings" element={<Settings />} />

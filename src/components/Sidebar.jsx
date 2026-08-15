@@ -16,6 +16,7 @@ import {
   CreditCard,
   ChartColumn,
   BellDot,
+  MessageSquare,
   ShieldCheck,
   Settings,
 } from "lucide-react";
@@ -79,6 +80,11 @@ const peopleItems = [
     title: "Subscriptions",
     icon: CreditCard,
     path: "/subscriptions",
+  },
+  {
+    title: "Support Queries",
+    icon: MessageSquare,
+    path: "/support",
   },
 ];
 

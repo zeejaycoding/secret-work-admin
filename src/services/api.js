@@ -164,6 +164,14 @@ export const sendNotification = (id) =>
 export const deleteNotification = (id) =>
   api.delete(`/admin/notifications/${id}`);
 
+export const getSupportQueries = () => api.get("/admin/support/queries");
+
+export const getSupportQuery = (room) =>
+  api.get(`/admin/support/queries/${encodeURIComponent(room)}`);
+
+export const replySupportQuery = (room, reply) =>
+  api.post(`/admin/support/queries/${encodeURIComponent(room)}/reply`, { reply });
+
 export const getSettings = () => api.get("/admin/settings");
 
 export const getStorageUsage = () => api.get("/admin/settings/storage");
