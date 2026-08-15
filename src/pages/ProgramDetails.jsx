@@ -4,7 +4,6 @@ import { useParams, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowLeft,
   CircleX,
-  MessageCircle,
   Eye,
   Layers3,
   ChevronRight,
@@ -457,29 +456,6 @@ export default function ProgramDetails() {
             }}
           >
             Remove
-          </Button>
-
-          <Button
-            startIcon={<MessageCircle size={16} color="#FFFFFF" />}
-            sx={{
-              bgcolor: "#1F1F1F",
-              border: "1px solid #2A2A2A",
-              borderRadius: "10px",
-              color: "#D6D6D6",
-              textTransform: "none",
-              fontFamily: "Poppins",
-              fontWeight: 500,
-              fontSize: "12px",
-              px: 2.5,
-              py: 1,
-              flex: { xs: 1, sm: "unset" },
-              "&:hover": {
-                bgcolor: "#1F1F1F",
-                borderColor: "#3A3A3A",
-              },
-            }}
-          >
-            Message
           </Button>
         </Box>
       </Box>
