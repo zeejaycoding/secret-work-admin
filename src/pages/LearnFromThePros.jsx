@@ -640,7 +640,7 @@ export default function LearnFromThePros() {
           />
 
           <Typography sx={{ fontFamily: "Inter", fontWeight: 500, fontSize: "14px", color: "#7A7A7A", mb: 1 }}>
-            Number of Sessions
+            Number of Pro Seasons
           </Typography>
           <TextField
             placeholder="E.g 12"
