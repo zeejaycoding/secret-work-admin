@@ -465,7 +465,7 @@ export default function LearnFromThePros() {
                     color: "#929292",
                   }}
                 >
-                  {pro.sessions} {pro.sessions === 1 ? "session" : "sessions"}
+                  {pro.sessions} {pro.sessions === 1 ? "season" : "seasons"}
                 </Typography>
 
                 <Box sx={{ height: "1px", bgcolor: "#1F1F1F", my: 1.5 }} />
