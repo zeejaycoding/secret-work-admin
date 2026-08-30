@@ -74,22 +74,6 @@ const getPlanLabel = (plan) => {
   return "—";
 };
 
-const getPaymentMethodLabel = (pm) => {
-  if (!pm || pm === "") return "—";
-  if (pm === "card") return "Card";
-  if (pm === "apple_pay") return "Apple Pay";
-  if (pm === "google_pay") return "Google Pay";
-  if (pm === "link") return "Link";
-  return pm;
-};
-
-const paymentMethodStyles = {
-  card: { bg: "rgba(148, 163, 184, 0.12)", color: "#94A3B8" },
-  apple_pay: { bg: "rgba(255, 255, 255, 0.12)", color: "#FFFFFF" },
-  google_pay: { bg: "rgba(66, 133, 244, 0.12)", color: "#4285F4" },
-  link: { bg: "rgba(139, 92, 246, 0.12)", color: "#8B5CF6" },
-};
-
 const formatDate = (value) => {
   if (!value) return "—";
   const d = new Date(value);
@@ -680,7 +664,7 @@ export default function SubscriptionsPage() {
             <Table>
               <TableHead>
                 <TableRow sx={{ bgcolor: "#1F1F1F" }}>
-                  {["ID", "User", "Plan", "Method", "Amount", "Status", "Date", "Action"].map(
+                  {["ID", "User", "Plan", "Amount", "Status", "Date", "Action"].map(
                     (col) => (
                       <TableCell
                         key={col}
@@ -817,42 +801,6 @@ export default function SubscriptionsPage() {
                                 }}
                               >
                                 {getPlanLabel(t.plan)}
-                              </Typography>
-                            </Box>
-                          ) : (
-                            <Typography
-                              sx={{
-                                fontFamily: "Poppins",
-                                fontWeight: 500,
-                                fontSize: "13px",
-                                color: "#929292",
-                              }}
-                            >
-                              —
-                            </Typography>
-                          )}
-                        </TableCell>
-
-                        <TableCell sx={cellSx}>
-                          {t.paymentMethod ? (
-                            <Box
-                              sx={{
-                                bgcolor: (paymentMethodStyles[t.paymentMethod] || paymentMethodStyles.card).bg,
-                                borderRadius: "8px",
-                                px: 1.5,
-                                py: 0.6,
-                                width: "fit-content",
-                              }}
-                            >
-                              <Typography
-                                sx={{
-                                  fontFamily: "Poppins",
-                                  fontWeight: 500,
-                                  fontSize: "12px",
-                                  color: (paymentMethodStyles[t.paymentMethod] || paymentMethodStyles.card).color,
-                                }}
-                              >
-                                {getPaymentMethodLabel(t.paymentMethod)}
                               </Typography>
                             </Box>
                           ) : (
@@ -1144,52 +1092,7 @@ export default function SubscriptionsPage() {
                       <Box>
                         <Typography
                           sx={{
-                            fontFamily: "Poppins",
-                            fontWeight: 500,
-                            fontSize: "10px",
-                            color: "#6B6B6B",
-                            mb: 0.5,
-                          }}
-                        >
-                          Method
-                        </Typography>
-                        {t.paymentMethod ? (
-                          <Box
-                            sx={{
-                              bgcolor: (paymentMethodStyles[t.paymentMethod] || paymentMethodStyles.card).bg,
-                              borderRadius: "8px",
-                              px: 1.4,
-                              py: 0.5,
-                              width: "fit-content",
-                            }}
-                          >
-                            <Typography
-                              sx={{
-                                fontFamily: "Poppins",
-                                fontWeight: 500,
-                                fontSize: "12px",
-                                color: (paymentMethodStyles[t.paymentMethod] || paymentMethodStyles.card).color,
-                              }}
-                            >
-                              {getPaymentMethodLabel(t.paymentMethod)}
-                            </Typography>
-                          </Box>
-                        ) : (
-                          <Typography
-                            sx={{
-                              fontFamily: "Poppins",
-                              fontWeight: 500,
-                              fontSize: "12px",
-                              color: "#929292",
-                            }}
-                          >
-                            —
-                          </Typography>
-                        )}
-                      </Box>
-                      <Box>
-                        <Typography
-                          sx={{
+
                             fontFamily: "Poppins",
                             fontWeight: 500,
                             fontSize: "10px",
